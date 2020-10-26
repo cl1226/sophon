@@ -8,3 +8,8 @@
 1. 海量数据ETL
 2. 海量数据聚合
 3. 多源数据处理
+### 算子配置
+1. 支持Java code/Scala code
+2. 支持Java Jar/Scala Jar
+3. 支持SQL
+4. 支持Python/Shell脚本
