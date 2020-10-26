@@ -1,6 +1,6 @@
 /compute-spark/compute-spark.iml
 /compute-common/compute-common.iml
-/compute-common/compute-example.iml
+/compute-example/compute-example.iml
 /compute-master-v2.iml
 /target/
 /compute-spark/target/
