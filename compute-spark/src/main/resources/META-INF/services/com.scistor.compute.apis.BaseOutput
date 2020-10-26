@@ -5,3 +5,5 @@ com.scistor.compute.output.batch.Kafka
 com.scistor.compute.output.batch.Mysql
 com.scistor.compute.output.batch.Postgresql
 com.scistor.compute.output.batch.Gaussdb
+com.scistor.compute.output.batch.Oracle
+com.scistor.compute.output.batch.Gbase

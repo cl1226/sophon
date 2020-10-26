@@ -1,6 +1,8 @@
-package com.scistor.compute.utils;
+package com.scistor.compute.until.yarn;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -15,7 +17,7 @@ public class JobUtil {
     private ExecuteShellUtil executeShellUtil = ExecuteShellUtil.getInstance();
 
     public static void main(String[] args) {
-        String jobName = "模型_批量规则测试_eaf5b3059d3444158ba75071c4f41ff8_admin";
+        String jobName = "写入postgresql模型_admin_0edd206c8a124aa285d7126cce1865f9";
         JobUtil jobUtil = new JobUtil();
 
         String jobStatus = "";
