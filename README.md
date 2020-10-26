@@ -13,3 +13,12 @@
 2. 支持Java Jar/Scala Jar
 3. 支持SQL
 4. 支持Python/Shell脚本
+### 支持的数据源
+1. Hdfs
+2. Hive
+3. Hbase
+4. Mysql/Oracle
+5. Postgresql/Gaussdb/Gbase
+6. Elasticsearch
+7. File
+8. Kafka

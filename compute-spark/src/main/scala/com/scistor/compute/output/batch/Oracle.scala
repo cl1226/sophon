@@ -1,10 +1,10 @@
 package com.scistor.compute.output.batch
 
 import com.scistor.compute.apis.BaseOutput
-import com.scistor.compute.model.spark.{SinkAttribute, SourceAttribute}
-import org.apache.spark.sql.{Dataset, Row, SaveMode, SparkSession}
+import com.scistor.compute.model.spark.SinkAttribute
+import org.apache.spark.sql.{Dataset, Row}
 
-class Mysql extends BaseOutput {
+class Oracle extends BaseOutput {
 
   var sink: SinkAttribute = _
 
@@ -18,25 +18,17 @@ class Mysql extends BaseOutput {
   /**
    * get SinkAttribute.
    **/
-  override def getSink(): SinkAttribute = {
-    this.sink
-  }
-
-  override def prepare(spark: SparkSession): Unit = {
-    super.prepare(spark)
-  }
+  override def getSink(): SinkAttribute = sink
 
   override def process(df: Dataset[Row]): Unit = {
     val parameters = sink.parameters
     val saveMode = parameters.getOrDefault("saveMode", "append")
 
     val prop = new java.util.Properties
-    prop.setProperty("driver", "com.mysql.jdbc.Driver")
+    prop.setProperty("driver", "oracle.jdbc.driver.OracleDriver")
     prop.setProperty("user", sink.sink_connection_username)
     prop.setProperty("password", sink.sink_connection_password)
 
     df.write.mode(saveMode).jdbc(sink.sink_connection_url, sink.tableName, prop)
-
   }
-
 }
