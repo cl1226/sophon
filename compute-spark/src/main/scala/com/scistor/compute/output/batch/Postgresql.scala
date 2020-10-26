@@ -76,11 +76,27 @@ class Postgresql extends BaseOutput {
   }
 
   override def process(df: Dataset[Row]): Unit = {
-    println("copy into postgresql...")
-    df.rdd.mapPartitions(x => {
-      copyIn(x.toArray, sinkAttribute)
-      x
-    }).count()
+    val params = sinkAttribute.parameters
+    val saveType = params.getOrDefault("saveType", "jdbc")
+
+    saveType match {
+      case "jdbc" => {
+        val saveMode = params.getOrDefault("saveMode", "append")
+        val prop = new java.util.Properties
+        prop.setProperty("driver", "org.postgresql.Driver")
+        prop.setProperty("user", sinkAttribute.sink_connection_username)
+        prop.setProperty("password", sinkAttribute.sink_connection_password)
+
+        df.write.mode(saveMode).jdbc(sinkAttribute.sink_connection_url, sinkAttribute.tableName, prop)
+      }
+      case "copy" => {
+        println("copy into postgresql...")
+        df.rdd.mapPartitions(x => {
+          copyIn(x.toArray, sinkAttribute)
+          x
+        }).count()
+      }
+    }
   }
 
 }

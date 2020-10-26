@@ -1,7 +1,9 @@
 package com.scistor.compute.model.spark;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SinkAttribute implements Serializable {
     public SinkType sinkType;// 数据下沉类型
@@ -45,6 +47,8 @@ public class SinkAttribute implements Serializable {
 
     public boolean isKerberos = false;
     public String jaasConfPath;
+
+    public Map<String,String> parameters = new HashMap<>();
 
     public SinkType getSinkType() {
         return sinkType;
@@ -292,5 +296,13 @@ public class SinkAttribute implements Serializable {
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    public Map<String, String> getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(Map<String, String> parameters) {
+        this.parameters = parameters;
     }
 }

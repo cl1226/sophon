@@ -5,6 +5,7 @@ public enum SinkType {
     MYSQL,
     HIVE,
     PGSQL,
+    POSTGRESQL,
     HIVEJDBC,
     DFSPARQUET,
     DFSJSON,
@@ -14,5 +15,6 @@ public enum SinkType {
     HBASE,
     ODPS,
     HDFS,
-    ALIMQ
+    ALIMQ,
+    GAUSSDB
 }

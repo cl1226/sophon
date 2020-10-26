@@ -50,7 +50,8 @@ object JobInfoTransfer {
       case DataSourceType.Oracle => SinkType.ORACLE
       case DataSourceType.Hive => SinkType.HIVE
       case DataSourceType.Hdfs => SinkType.HDFS
-      case DataSourceType.Postgres => SinkType.PGSQL
+      case DataSourceType.Postgres => SinkType.POSTGRESQL
+      case DataSourceType.Gaussdb => SinkType.GAUSSDB
       case _ => null
     }
 
@@ -74,6 +75,7 @@ object JobInfoTransfer {
     sink.sink_connection_username = step.getDatabase.getUsername
     sink.sink_connection_password = step.getDatabase.getPassword
     sink.tableName = step.getDatabase.getTableName
+    sink.parameters = step.getDatabase.getParameters
 
     step.getInput.asScala.foreach(out => {
       out._2.asScala.foreach(i => {
@@ -118,6 +120,8 @@ object JobInfoTransfer {
       case DataSourceType.Oracle => SourceType.ORACLE
       case DataSourceType.Hive => SourceType.HIVE
       case DataSourceType.Hdfs => SourceType.HDFS
+      case DataSourceType.Postgres => SourceType.POSTGRESQL
+      case DataSourceType.Gaussdb => SourceType.GAUSSDB
       case _ => null
     }
 

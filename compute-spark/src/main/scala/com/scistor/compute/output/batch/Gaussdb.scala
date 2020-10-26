@@ -77,16 +77,33 @@ class Gaussdb extends BaseOutput {
   }
 
   def process(df: DataFrame): Unit = {
-    println("copy into gaussdb...")
-    val columns: StringBuilder = new StringBuilder
-    df.schema.foreach(col => {
-      columns.append(s""""${col.name}"""").append(",")
-    })
-    val str = columns.toString().substring(0, columns.toString().length - 1)
-    df.rdd.mapPartitions(x => {
-      copyIn(x.toArray, sinkAttribute, str)
-      x
-    }).count()
+    val params = sinkAttribute.parameters
+    val saveType = params.getOrDefault("saveType", "jdbc")
+
+    saveType match {
+      case "jdbc" => {
+        val saveMode = params.getOrDefault("saveMode", "append")
+        val prop = new java.util.Properties
+        prop.setProperty("driver", "com.huawei.gauss200.jdbc.Driver")
+        prop.setProperty("user", sinkAttribute.sink_connection_username)
+        prop.setProperty("password", sinkAttribute.sink_connection_password)
+
+        df.write.mode(saveMode).jdbc(sinkAttribute.sink_connection_url, sinkAttribute.tableName, prop)
+      }
+      case "copy" => {
+        println("copy into gaussdb...")
+        val columns: StringBuilder = new StringBuilder
+        df.schema.foreach(col => {
+          columns.append(s""""${col.name}"""").append(",")
+        })
+        val str = columns.toString().substring(0, columns.toString().length - 1)
+        df.rdd.mapPartitions(x => {
+          copyIn(x.toArray, sinkAttribute, str)
+          x
+        }).count()
+      }
+    }
+
   }
 
 }

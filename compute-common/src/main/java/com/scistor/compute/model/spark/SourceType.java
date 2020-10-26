@@ -5,6 +5,7 @@ public enum SourceType {
     MYSQL,
     HIVE,
     PGSQL,
+    POSTGRESQL,
     HIVEJDBC,
     ORACLE,
     ES,
@@ -15,5 +16,6 @@ public enum SourceType {
     ODPS,
     GBASE,
     HDFS,
-    ALIMQ
+    ALIMQ,
+    GAUSSDB
 }
