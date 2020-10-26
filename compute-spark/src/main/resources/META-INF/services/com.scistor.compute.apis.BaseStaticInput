@@ -1,0 +1,10 @@
+com.scistor.compute.input.batch.Jdbc
+com.scistor.compute.input.batch.Mysql
+com.scistor.compute.input.batch.Oracle
+com.scistor.compute.input.batch.Postgresql
+com.scistor.compute.input.batch.Gaussdb
+com.scistor.compute.input.batch.Gbase
+com.scistor.compute.input.batch.File
+com.scistor.compute.input.batch.Hdfs
+com.scistor.compute.input.batch.Elasticsearch
+com.scistor.compute.input.batch.Hive

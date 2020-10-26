@@ -1,0 +1,7 @@
+com.scistor.compute.output.batch.Elasticsearch
+com.scistor.compute.output.batch.Hdfs
+com.scistor.compute.output.batch.Jdbc
+com.scistor.compute.output.batch.Kafka
+com.scistor.compute.output.batch.Mysql
+com.scistor.compute.output.batch.Postgresql
+com.scistor.compute.output.batch.Gaussdb
