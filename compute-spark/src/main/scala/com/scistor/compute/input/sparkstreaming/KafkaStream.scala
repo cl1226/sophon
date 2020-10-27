@@ -1,5 +1,7 @@
 package com.scistor.compute.input.sparkstreaming
 
+import java.util.Properties
+
 import com.scistor.compute.apis.BaseStreamingInput
 import com.scistor.compute.input.sparkstreaming.kafkaStreamProcess.{CsvStreamProcess, JsonStreamProcess}
 import com.scistor.compute.model.spark.{DecodeType, SinkAttribute, SourceAttribute}
@@ -18,6 +20,8 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
 
   var sourceAttribute: SourceAttribute = _
 
+  var kafkaParams: Map[String, String] = _
+
   /**
    * Set SourceAttribute.
    **/
@@ -28,36 +32,37 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
   /**
    * get SourceAttribute.
    **/
-  override def getSource(): SourceAttribute = ???
-
-  // kafka consumer configuration : http://kafka.apache.org/documentation.html#oldconsumerconfigs
-  val consumerPrefix = "consumer."
+  override def getSource(): SourceAttribute = sourceAttribute
 
   override def prepare(spark: SparkSession): Unit = {
     super.prepare(spark)
+
+    val props = new Properties()
+    props.setProperty("format", "json")
+    props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
+    props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
+    props.setProperty("bootstrap.servers", sourceAttribute.bootstrap_urls)
+    props.setProperty("group.id", sourceAttribute.groupid)
+    props.setProperty("enable.auto.commit", "false")
+
+    if (sourceAttribute.isKerberos){
+      props.setProperty("security.protocol", "SASL_PLAINTEXT")
+      props.setProperty("sasl.kerberos.service.name", "kafka")
+    }
+
+    println("[INFO] Kafka Input properties: ")
+    props.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
+    kafkaParams = props.foldRight(Map[String, String]())((entry, map) => {
+      map + (entry._1 -> entry._2)
+    })
+
   }
 
   override def getDStream(ssc: StreamingContext): DStream[ConsumerRecord[String, String]] = {
-
-    val map = Map(
-      "key.deserializer" -> "org.apache.kafka.common.serialization.StringDeserializer",
-      "value.deserializer" -> "org.apache.kafka.common.serialization.StringDeserializer",
-      "enable.auto.commit" -> false,
-      "group.id" -> sourceAttribute.groupid,
-      "bootstrap.servers" -> sourceAttribute.bootstrap_urls
-    )
-
-    val kafkaParams = map
-      .entrySet()
-      .foldRight(Map[String, String]())((entry, map) => {
-        map + (entry.getKey -> entry.getValue.toString)
-      })
-
-    println("[INFO] Input Kafka Params:")
-    for (entry <- kafkaParams) {
-      val (key, value) = entry
-      println("[INFO] \t" + key + " = " + value)
-    }
 
     val topics = sourceAttribute.topic.split(",").toSet
     val inputDStream : InputDStream[ConsumerRecord[String, String]] = KafkaUtils.createDirectStream(

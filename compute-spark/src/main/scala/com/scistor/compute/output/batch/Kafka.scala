@@ -46,10 +46,15 @@ class Kafka extends BaseOutput {
     props.setProperty("bootstrap.servers", sink.bootstrap_urls)
     props.setProperty("group.id", sink.groupid)
 
+    if (sink.isKerberos){
+      props.setProperty("security.protocol", "SASL_PLAINTEXT")
+      props.setProperty("sasl.kerberos.service.name", "kafka")
+    }
+
     println("[INFO] Kafka Output properties: ")
     props.foreach(entry => {
       val (key, value) = entry
-      println("[INFO] \t" + key + " = " + value)
+      println("\t" + key + " = " + value)
     })
 
     kafkaSink = Some(spark.sparkContext.broadcast(KafkaProducerUtil(props)))
@@ -57,7 +62,7 @@ class Kafka extends BaseOutput {
 
   override def process(df: Dataset[Row]): Unit = {
     val topic = sink.topic
-    var format = sink.sinkFormat.name()
+    val format = sink.sinkFormat.name()
     format match {
       case "text" => {
         if (df.schema.size != 1) {
