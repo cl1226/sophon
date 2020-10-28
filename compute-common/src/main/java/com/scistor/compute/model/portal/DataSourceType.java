@@ -14,6 +14,7 @@ public enum DataSourceType {
     Gaussdb("gaussdb", "jdbc"),
     Hdfs("hdfs", "hdfs"),
     Ftp("ftp", "ftp"),
+    Http("http", "http"),
     ElasticSearch("es", "es"),
     CustomJdbc("custom-jdbc", "jdbc");
     private final String key;

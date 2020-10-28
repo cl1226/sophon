@@ -18,5 +18,6 @@ public enum SourceType {
     HDFS,
     ALIMQ,
     GAUSSDB,
-    FTP
+    FTP,
+    HTTP
 }

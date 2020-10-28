@@ -123,6 +123,7 @@ object JobInfoTransfer {
       case DataSourceType.Postgres => SourceType.POSTGRESQL
       case DataSourceType.Gaussdb => SourceType.GAUSSDB
       case DataSourceType.Ftp => SourceType.FTP
+      case DataSourceType.Http => SourceType.HTTP
       case _ => null
     }
 
