@@ -94,7 +94,9 @@ object SparkJobStarter extends Logging {
 
     prepare(sparkSession, info)
 
-    // when you see this ASCII logo, waterdrop is really started.
+    basePrepare(sparkSession, staticInputs, outputs)
+
+    // when you see this ASCII logo, scistor compute platform is really started.
     showScistorAsciiLogo()
 
     if (staticInputs.nonEmpty) {

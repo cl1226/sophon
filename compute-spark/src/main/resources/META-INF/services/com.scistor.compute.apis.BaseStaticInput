@@ -8,3 +8,4 @@ com.scistor.compute.input.batch.File
 com.scistor.compute.input.batch.Hdfs
 com.scistor.compute.input.batch.Elasticsearch
 com.scistor.compute.input.batch.Hive
+com.scistor.compute.input.batch.Ftp

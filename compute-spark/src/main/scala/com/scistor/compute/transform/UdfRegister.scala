@@ -2,6 +2,7 @@ package com.scistor.compute.transform
 
 import java.util.ServiceLoader
 
+import com.scistor.compute.apis.BaseTransform
 import org.apache.spark.sql.SparkSession
 
 import scala.collection.JavaConverters._
