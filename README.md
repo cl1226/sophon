@@ -22,3 +22,10 @@
 6. Elasticsearch
 7. File
 8. Kafka
+### 支持内置算子
+> 支持在页面上配置相应内置算子所必须的参数，完成对数据流的转换
+1. Join(sourceTableName, targetTableName, joinField[List], joinType[default: inner])
+2. Repartition(numPartitions)
+3. Sample(fraction, limit)
+4. Checksum(method[CRC32, MD5, SHA1], sourceField, targetField)
+5. Convert(sourceField, newType)
