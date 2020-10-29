@@ -9,7 +9,7 @@ import com.scistor.compute.model.portal.JobApiDTO
 import com.scistor.compute.model.spark.{ComputeAttribute, ComputeJob, ComputeSinkAttribute, OperatorType, ProjectInfo}
 import com.scistor.compute.transform.UdfRegister
 import com.scistor.compute.utils.CommonUtil.writeSimpleData
-import com.scistor.compute.utils.JobInfoTransfer.{jedis, transforms}
+import com.scistor.compute.utils.JobInfoTransfer.jedis
 import com.scistor.compute.utils.{AsciiArt, ClassUtils, CommonUtil, CompressionUtils, ConfigBuilder, JdbcUtil, JobInfoTransfer}
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
@@ -83,9 +83,9 @@ object SparkJobStarter extends Logging {
     baseValidate(staticInputs, streamingInputs, transforms.values.toList, outputs)
 
     if (streamingInputs.nonEmpty) {
-      streamingProcessing(sparkSession, staticInputs, streamingInputs, outputs, info)
+      streamingProcessing(sparkSession, staticInputs, streamingInputs, transforms, outputs, info)
     } else {
-      batchProcessing(sparkSession, staticInputs, outputs, info)
+      batchProcessing(sparkSession, staticInputs, transforms, outputs, info)
     }
   }
 
@@ -94,6 +94,7 @@ object SparkJobStarter extends Logging {
    **/
   private def batchProcessing(sparkSession: SparkSession,
                               staticInputs: List[BaseStaticInput],
+                              transforms: Map[String, BaseTransform],
                               outputs: List[BaseOutput],
                               info: ProjectInfo): Unit = {
     jobName = sparkSession.sparkContext.getConf.get("spark.app.name", info.getProjectName)
@@ -112,7 +113,7 @@ object SparkJobStarter extends Logging {
         breakable {
           val df = viewTableMap.get(step.getDataSource)
           if(!df.isDefined) break
-          transform(df.get, step, sparkSession, info)
+          transform(df.get, step, transforms, sparkSession, info)
           outputs.remove(step.getJobName)
         }
       })
@@ -137,6 +138,7 @@ object SparkJobStarter extends Logging {
   private def streamingProcessing(sparkSession: SparkSession,
                                   staticInputs: List[BaseStaticInput],
                                   streamingInputs: List[BaseStreamingInput[Any]],
+                                  transforms: Map[String, BaseTransform],
                                   outputs: List[BaseOutput],
                                   info: ProjectInfo
                                  ): Unit = {
@@ -173,7 +175,7 @@ object SparkJobStarter extends Logging {
           ds.persist(StorageLevel.MEMORY_AND_DISK)
 
           info.getRunJobs.asScala.foreach(step => {
-            ds = transform(ds, step, sparkSession, info)
+            ds = transform(ds, step, transforms, sparkSession, info)
           })
           ds.unpersist()
 
@@ -232,7 +234,7 @@ object SparkJobStarter extends Logging {
         System.exit(-1) // invalid configuration
       }
     }
-    deployModeCheck()
+//    deployModeCheck()
   }
 
   private[scistor] def deployModeCheck(): Unit = {
@@ -308,7 +310,7 @@ object SparkJobStarter extends Logging {
     })
   }
 
-  private[scistor] def transform(dfinput: DataFrame, step: ComputeJob, session: SparkSession, job: ProjectInfo): DataFrame = {
+  private[scistor] def transform(dfinput: DataFrame, step: ComputeJob, transforms: Map[String, BaseTransform], session: SparkSession, job: ProjectInfo): DataFrame = {
     dfinput.createOrReplaceTempView(step.getDataSource)
     jedis.set(s"""${jobName}-${step.getJobName}-STATUS""", "RUNNING")
 
@@ -344,7 +346,7 @@ object SparkJobStarter extends Logging {
     })
 
     // execute private sophon
-    val privateTransform = transforms.get(step.getJobId).asInstanceOf[BaseTransform]
+    val privateTransform = transforms.get(step.getJobId).get
     df = privateTransform.process(session, df)
 
     // execute sql

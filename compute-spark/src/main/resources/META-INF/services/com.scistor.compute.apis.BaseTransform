@@ -1,2 +1,7 @@
 com.scistor.compute.transform.URLDecode
 com.scistor.compute.transform.URLEncode
+com.scistor.compute.transform.Checksum
+com.scistor.compute.transform.Convert
+com.scistor.compute.transform.Join
+com.scistor.compute.transform.Repartition
+com.scistor.compute.transform.Sample

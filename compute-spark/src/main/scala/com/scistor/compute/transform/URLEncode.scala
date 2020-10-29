@@ -3,6 +3,7 @@ package com.scistor.compute.transform
 import java.net.URLEncoder
 
 import com.scistor.compute.apis.BaseTransform
+import com.scistor.compute.model.spark.ComputeJob
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{col, udf}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
@@ -34,4 +35,14 @@ class URLEncode extends BaseTransform {
     val targetField = sourceField
     df.withColumn(targetField, decodeFunc(col(sourceField)))
   }
+
+  /**
+   * Set Attribute.
+   * */
+  override def setAttribute(attr: ComputeJob): Unit = ???
+
+  /**
+   * get Attribute.
+   * */
+  override def getAttribute(): ComputeJob = ???
 }

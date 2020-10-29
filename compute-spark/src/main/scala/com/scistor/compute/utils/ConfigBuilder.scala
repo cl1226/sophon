@@ -138,7 +138,8 @@ class ConfigBuilder {
       val services: Iterable[Plugin] =
         (ServiceLoader load classOf[BaseStaticInput]).asScala ++
           (ServiceLoader load classOf[BaseOutput]).asScala ++
-          (ServiceLoader load classOf[BaseStreamingInput[Any]]).asScala
+          (ServiceLoader load classOf[BaseStreamingInput[Any]]).asScala ++
+          (ServiceLoader load classOf[BaseTransform]).asScala
 
       var classFound = false
       breakable {
