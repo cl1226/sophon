@@ -9,11 +9,13 @@
 2. 海量数据聚合
 3. 多源数据处理
 ### 算子配置
+> 通过可视化界面完成代码的编写, Jar包的上传, SQL的编写, 脚本的编写
 1. 支持Java code/Scala code
 2. 支持Java Jar/Scala Jar
 3. 支持SQL
 4. 支持Python/Shell脚本
 ### 支持的数据源
+> 支持对多种数据源的读写
 1. Hdfs
 2. Hive
 3. Hbase
@@ -22,6 +24,8 @@
 6. Elasticsearch
 7. File
 8. Kafka
+9. Ftp
+10. Http
 ### 支持内置算子
 > 支持在页面上配置相应内置算子所必须的参数，完成对数据流的转换
 1. Join(sourceTableName, targetTableName, joinField[List], joinType[default: inner])
