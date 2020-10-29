@@ -20,6 +20,13 @@ class Gbase extends BaseOutput {
    **/
   override def getSink(): SinkAttribute = sink
 
+  /**
+   * Return true and empty string if config is valid, return false and error message if config is invalid.
+   */
+  override def validate(): (Boolean, String) = {
+    (true, "")
+  }
+
   override def process(df: Dataset[Row]): Unit = {
     val parameters = sink.parameters
     val saveMode = parameters.getOrDefault("saveMode", "append")

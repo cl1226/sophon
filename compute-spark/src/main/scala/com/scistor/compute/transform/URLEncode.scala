@@ -11,6 +11,12 @@ import scala.collection.JavaConversions._
 
 class URLEncode extends BaseTransform {
 
+  /**
+   * Return true and empty string if config is valid, return false and error message if config is invalid.
+   */
+  override def validate(): (Boolean, String) = {
+    (true, "")
+  }
 
   /**
    * Allow to register user defined UDFs

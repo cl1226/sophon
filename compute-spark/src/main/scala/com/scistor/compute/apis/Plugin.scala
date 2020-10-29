@@ -18,4 +18,9 @@ trait Plugin extends Serializable with Logging {
    */
   def prepare(spark: SparkSession): Unit = {}
 
+  /**
+   *  Return true and empty string if config is valid, return false and error message if config is invalid.
+   */
+  def validate(): (Boolean, String)
+
 }

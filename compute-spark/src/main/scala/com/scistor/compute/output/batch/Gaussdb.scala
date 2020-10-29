@@ -28,6 +28,13 @@ class Gaussdb extends BaseOutput {
     this.sinkAttribute
   }
 
+  /**
+   * Return true and empty string if config is valid, return false and error message if config is invalid.
+   */
+  override def validate(): (Boolean, String) = {
+    (true, "")
+  }
+
   def genPipedInputStream(arr: Array[Row]): InputStream = {
     val out = new PipedOutputStream
     (new Thread(){

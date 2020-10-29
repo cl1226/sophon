@@ -1,14 +1,16 @@
 package com.scistor.compute
 
+import java.io.File
+
 import com.alibaba.fastjson.JSON
-import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput, Plugin}
+import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput, BaseTransform, Plugin}
 import com.scistor.compute.interfacex.{ComputeOperator, SparkProcessProxy, SparkProcessProxy2}
 import com.scistor.compute.model.portal.JobApiDTO
 import com.scistor.compute.model.spark.{ComputeAttribute, ComputeJob, ComputeSinkAttribute, OperatorType, ProjectInfo}
 import com.scistor.compute.transform.UdfRegister
 import com.scistor.compute.utils.CommonUtil.writeSimpleData
-import com.scistor.compute.utils.JobInfoTransfer.jedis
-import com.scistor.compute.utils.{AsciiArt, ClassUtils, CommonUtil, ConfigBuilder, JdbcUtil, JobInfoTransfer}
+import com.scistor.compute.utils.JobInfoTransfer.{jedis, transforms}
+import com.scistor.compute.utils.{AsciiArt, ClassUtils, CommonUtil, CompressionUtils, ConfigBuilder, JdbcUtil, JobInfoTransfer}
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.ComputeProcess.{computeOperatorProcess, computeSparkProcess, computeSparkProcess2, pipeLineProcess, processDynamicCode, processPrivate}
@@ -22,6 +24,7 @@ import scalaj.http.Http
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.util.control.Breaks.{break, breakable}
+import scala.util.{Failure, Success, Try}
 
 object SparkJobStarter extends Logging {
 
@@ -74,7 +77,10 @@ object SparkJobStarter extends Logging {
 
     val staticInputs = configBuilder.createStaticInputs("batch")
     val streamingInputs = configBuilder.createStreamingInputs("batch")
+    val transforms = configBuilder.createTransforms("batch")
     val outputs = configBuilder.createOutputs[BaseOutput]("batch")
+
+    baseValidate(staticInputs, streamingInputs, transforms.values.toList, outputs)
 
     if (streamingInputs.nonEmpty) {
       streamingProcessing(sparkSession, staticInputs, streamingInputs, outputs, info)
@@ -204,6 +210,61 @@ object SparkJobStarter extends Logging {
     }
   }
 
+  private[scistor] def baseValidate(plugins: List[Plugin]*): Unit = {
+    var configValid = true
+    for (pluginList <- plugins) {
+      for (p <- pluginList) {
+        val (isValid, msg) = Try(p.validate()) match {
+          case Success(info) => {
+            val (ret, message) = info
+            (ret, message)
+          }
+          case Failure(exception) => (false, exception.getMessage)
+        }
+
+        if (!isValid) {
+          configValid = false
+          printf("Plugin[%s] contains invalid config, error: %s\n", p.name, msg)
+        }
+      }
+
+      if (!configValid) {
+        System.exit(-1) // invalid configuration
+      }
+    }
+    deployModeCheck()
+  }
+
+  private[scistor] def deployModeCheck(): Unit = {
+    logInfo("preparing cluster mode work dir files...")
+
+    // plugins.tar.gz is added in local app temp dir of driver and executors in cluster mode from --files specified in spark-submit
+    val workDir = new File(".")
+    logWarning("work dir exists: " + workDir.exists() + ", is dir: " + workDir.isDirectory)
+
+    workDir.listFiles().foreach(f => logWarning("\t list file: " + f.getAbsolutePath))
+
+    // decompress plugin dir
+    val compressedFile = new File("plugins.tar.gz")
+
+    Try(CompressionUtils.unGzip(compressedFile, workDir)) match {
+      case Success(tempFile) => {
+        Try(CompressionUtils.unTar(tempFile, workDir)) match {
+          case Success(_) => logInfo("succeeded to decompress plugins.tar.gz")
+          case Failure(ex) => {
+            logError("failed to decompress plugins.tar.gz", ex)
+            sys.exit(-1)
+          }
+        }
+
+      }
+      case Failure(ex) => {
+        logError("failed to decompress plugins.tar.gz", ex)
+        sys.exit(-1)
+      }
+    }
+  }
+
   private[scistor] def showScistorAsciiLogo(): Unit = {
     AsciiArt.printAsciiArt("Scistor")
   }
@@ -281,6 +342,10 @@ object SparkJobStarter extends Logging {
         case _ => throw new RuntimeException(s"Unsupported operator type: [${step.getOperatorType}], please check it!")
       }
     })
+
+    // execute private sophon
+    val privateTransform = transforms.get(step.getJobId).asInstanceOf[BaseTransform]
+    df = privateTransform.process(session, df)
 
     // execute sql
     step.getProcessSql.foreach(processSQL => {

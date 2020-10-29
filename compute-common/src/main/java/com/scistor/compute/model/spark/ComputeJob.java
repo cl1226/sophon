@@ -15,6 +15,8 @@ public class ComputeJob implements Serializable {
     private String dataSource;
     private OperatorType operatorType;
 
+    private String pluginName;
+
     private SourceAttribute attribute = new SourceAttribute();
     private SinkAttribute sinkAttribute;
 
@@ -172,5 +174,13 @@ public class ComputeJob implements Serializable {
 
     public void setAggCols(List<String> aggCols) {
         this.aggCols = aggCols;
+    }
+
+    public String getPluginName() {
+        return pluginName;
+    }
+
+    public void setPluginName(String pluginName) {
+        this.pluginName = pluginName;
     }
 }

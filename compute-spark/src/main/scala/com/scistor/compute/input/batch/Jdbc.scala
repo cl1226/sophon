@@ -26,6 +26,13 @@ class Jdbc extends BaseStaticInput {
     this.config
   }
 
+  /**
+   * Return true and empty string if config is valid, return false and error message if config is invalid.
+   */
+  override def validate(): (Boolean, String) = {
+    (true, "")
+  }
+
   def initProp(driver: String): Tuple2[Properties, Array[String]] = {
     val prop = new Properties()
     prop.setProperty("driver", driver)

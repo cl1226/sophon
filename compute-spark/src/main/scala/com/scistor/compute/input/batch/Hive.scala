@@ -23,6 +23,13 @@ class Hive extends BaseStaticInput {
   }
 
   /**
+   * Return true and empty string if config is valid, return false and error message if config is invalid.
+   */
+  override def validate(): (Boolean, String) = {
+    (true, "")
+  }
+
+  /**
    * Get DataFrame from this Static Input.
    **/
   override def getDataset(spark: SparkSession): Dataset[Row] = {

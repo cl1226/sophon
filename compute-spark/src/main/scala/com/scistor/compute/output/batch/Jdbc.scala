@@ -24,6 +24,13 @@ class Jdbc extends BaseOutput {
     this.sink
   }
 
+  /**
+   * Return true and empty string if config is valid, return false and error message if config is invalid.
+   */
+  override def validate(): (Boolean, String) = {
+    (true, "")
+  }
+
   override def process(df: Dataset[Row]): Unit = {
     val prop = new java.util.Properties
     prop.setProperty("driver", "com.mysql.jdbc.Driver")

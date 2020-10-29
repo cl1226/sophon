@@ -16,13 +16,12 @@ object JobInfoTransfer {
 
   var jedis: JedisClient = _
 
-  //global offline datasource need loaded
   val staticInputs = mutable.Map[String, SourceAttribute]()
 
-  //global online datasource need loaded
   val streamingInputs = mutable.Map[String, SourceAttribute]()
 
-  //global datasource need sink
+  val transforms = mutable.Map[String, ComputeJob]()
+
   val outputs = mutable.Map[String, SinkAttribute]()
 
   def formatSinkAttr(step: JobStepApiDTO) = {
@@ -256,6 +255,7 @@ object JobInfoTransfer {
       myStep.setJobId(step.getPluginsId)
       myStep.setJobName(step.getName)
       myStep.setDataSource(step.getDatabaseEnglish)
+      myStep.setPluginName(step.getPluginsName)
       if (StringUtils.isNoneBlank(step.getPluginsId) && step.getPluginsId.equals("system-filter")) {
         myStep.setProcessSql(step.getQueryList)
       }
@@ -298,7 +298,7 @@ object JobInfoTransfer {
 
         }
 
-        case "PRIVATE" =>
+        case "PRIVATE" => transforms += (myStep.getJobId -> myStep)
 
         case "UDF" =>
 

@@ -27,6 +27,12 @@ class Elasticsearch extends BaseOutput {
     this.sink
   }
 
+  /**
+   * Return true and empty string if config is valid, return false and error message if config is invalid.
+   */
+  override def validate(): (Boolean, String) = {
+    (true, "")
+  }
 
   /**
    * Prepare before running, do things like set config default value, add broadcast variable, accumulator.

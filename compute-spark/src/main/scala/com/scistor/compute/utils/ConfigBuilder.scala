@@ -2,7 +2,7 @@ package com.scistor.compute.utils
 
 import java.util.ServiceLoader
 
-import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput, Plugin}
+import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput, BaseTransform, Plugin}
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.control.Breaks.{break, breakable}
@@ -57,6 +57,31 @@ class ConfigBuilder {
     inputList
   }
 
+  def createTransforms[T <: Plugin](engine: String): Map[String, BaseTransform] = {
+
+    var transformMap = Map[String, BaseTransform]()
+    JobInfoTransfer.transforms.foreach(transform => {
+      val className = buildClassFullQualifier(transform._2.getPluginName, "transform", engine)
+
+      val obj = Class
+        .forName(className)
+        .newInstance()
+        .asInstanceOf[T]
+
+      obj match {
+        case transformObject: BaseTransform => {
+          val baseTransform: BaseTransform = transformObject.asInstanceOf[BaseTransform]
+          baseTransform.setAttribute(transform._2)
+          transformMap += (transform._1 -> baseTransform)
+        }
+        case _ => // do nothing
+      }
+
+    })
+
+    transformMap
+  }
+
   def createOutputs[T <: Plugin](engine: String): List[BaseOutput] = {
 
     var outputList = List[BaseOutput]()
@@ -106,7 +131,7 @@ class ConfigBuilder {
 
       val packageName = classType match {
         case "input" => ConfigBuilder.InputPackage + "." + getInputType(name, engine)
-        case "filter" => ConfigBuilder.TransformPackage
+        case "transform" => ConfigBuilder.TransformPackage
         case "output" => ConfigBuilder.OutputPackage + "." + engine
       }
 

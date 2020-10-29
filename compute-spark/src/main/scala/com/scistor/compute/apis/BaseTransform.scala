@@ -1,9 +1,20 @@
 package com.scistor.compute.apis
 
+import com.scistor.compute.model.spark.ComputeJob
 import org.apache.spark.sql.expressions.{UserDefinedAggregateFunction, UserDefinedFunction}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 abstract class BaseTransform extends Plugin {
+
+  /**
+   * Set Attribute.
+   * */
+  def setAttribute(attr: ComputeJob)
+
+  /**
+   * get Attribute.
+   * */
+  def getAttribute(): ComputeJob
 
   def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row]
 
