@@ -19,5 +19,6 @@ public enum SourceType {
     ALIMQ,
     GAUSSDB,
     FTP,
-    HTTP
+    HTTP,
+    ELASTICSEARCH
 }

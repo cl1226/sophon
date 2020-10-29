@@ -48,6 +48,8 @@ public class SinkAttribute implements Serializable {
     public boolean isKerberos = false;
     public String jaasConfPath;
 
+    public String databaseName;
+
     public Map<String,String> parameters = new HashMap<>();
 
     public SinkType getSinkType() {
@@ -304,5 +306,13 @@ public class SinkAttribute implements Serializable {
 
     public void setParameters(Map<String, String> parameters) {
         this.parameters = parameters;
+    }
+
+    public String getDatabaseName() {
+        return databaseName;
+    }
+
+    public void setDatabaseName(String databaseName) {
+        this.databaseName = databaseName;
     }
 }

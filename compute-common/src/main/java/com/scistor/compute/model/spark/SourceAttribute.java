@@ -48,6 +48,8 @@ public class SourceAttribute implements Serializable {
     public boolean isKerberos = true;
     public String jaasConfPath;
 
+    public String databaseName;
+
     public SourceType getSourceType() {
         return sourceType;
     }
@@ -270,5 +272,13 @@ public class SourceAttribute implements Serializable {
 
     public void setJaasConfPath(String jaasConfPath) {
         this.jaasConfPath = jaasConfPath;
+    }
+
+    public String getDatabaseName() {
+        return databaseName;
+    }
+
+    public void setDatabaseName(String databaseName) {
+        this.databaseName = databaseName;
     }
 }

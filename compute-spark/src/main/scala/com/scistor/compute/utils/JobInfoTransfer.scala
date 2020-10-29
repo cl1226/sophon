@@ -52,6 +52,7 @@ object JobInfoTransfer {
       case DataSourceType.Hdfs => SinkType.HDFS
       case DataSourceType.Postgres => SinkType.POSTGRESQL
       case DataSourceType.Gaussdb => SinkType.GAUSSDB
+      case DataSourceType.ElasticSearch => SinkType.ELASTICSEARCH
       case _ => null
     }
 
@@ -76,6 +77,7 @@ object JobInfoTransfer {
     sink.sink_connection_password = step.getDatabase.getPassword
     sink.tableName = step.getDatabase.getTableName
     sink.parameters = step.getDatabase.getParameters
+    sink.databaseName = step.getDatabase.getDatabaseName
 
     step.getInput.asScala.foreach(out => {
       out._2.asScala.foreach(i => {
@@ -124,6 +126,7 @@ object JobInfoTransfer {
       case DataSourceType.Gaussdb => SourceType.GAUSSDB
       case DataSourceType.Ftp => SourceType.FTP
       case DataSourceType.Http => SourceType.HTTP
+      case DataSourceType.ElasticSearch => SourceType.ELASTICSEARCH
       case _ => null
     }
 
@@ -138,6 +141,7 @@ object JobInfoTransfer {
     attribute.username = step.getDatabase.getUsername
     attribute.password = step.getDatabase.getPassword
     attribute.fieldsSparkJson = step.getDatabase.getFieldJson
+    attribute.databaseName = step.getDatabase.getDatabaseName
 
 //    val structType = org.apache.spark.sql.types.DataType.fromJson(step.getDatabase.getFieldJson)
 //    attribute.fields = parseSchemas(structType)

@@ -16,5 +16,6 @@ public enum SinkType {
     ODPS,
     HDFS,
     ALIMQ,
-    GAUSSDB
+    GAUSSDB,
+    ELASTICSEARCH
 }

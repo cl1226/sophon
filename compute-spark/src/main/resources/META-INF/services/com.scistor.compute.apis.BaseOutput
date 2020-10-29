@@ -7,3 +7,4 @@ com.scistor.compute.output.batch.Postgresql
 com.scistor.compute.output.batch.Gaussdb
 com.scistor.compute.output.batch.Oracle
 com.scistor.compute.output.batch.Gbase
+com.scistor.compute.output.batch.Elasticsearch
