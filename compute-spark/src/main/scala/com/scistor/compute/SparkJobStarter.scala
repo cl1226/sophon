@@ -45,15 +45,9 @@ object SparkJobStarter extends Logging {
 
     val response: http.HttpResponse[String] = Http(args(0)).header("Accept", "application/json").timeout(10000, 1000).asString
 
-    val str: String = "{\"transName\":\"模型_SQL脚本测试\",\"stepList\":[{\"stepFrom\":[],\"stepInfo\":{\"id\":\"123\",\"name\":\"test_in_b\",\"stepSource\":\"dataSource\",\"dataSourceStepType\":\"dataSourceInput\",\"stepType\":\"mysql\",\"stepId\":\"67ae9a3a140f49d98ee1a1d406fbb702\",\"stepAttributes\":{\"connectUrl\":\"jdbc:mysql://192.168.31.164:3306/test?characterEncoding=utf-8&serverTimezone=Asia/Shanghai\",\"dataBaseName\":\"test\",\"source\":\"source_1\",\"properties\":{\"password\":\"1122333\",\"user\":\"root\"},\"tableName\":\"source_1\"},\"inputFields\":[],\"outputFields\":[{\"fieldName\":\"sip\",\"streamFieldName\":\"sip\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"sp\",\"streamFieldName\":\"sp\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dip\",\"streamFieldName\":\"dip\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dp\",\"streamFieldName\":\"dp\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"src_c\",\"streamFieldName\":\"src_c\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dst_c\",\"streamFieldName\":\"dst_c\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"ln1\",\"streamFieldName\":\"ln1\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}]}},{\"stepFrom\":[\"test_in_b\"],\"stepInfo\":{\"id\":\"456\",\"name\":\"bbb\",\"stepSource\":\"system\",\"dataSourceStepType\":\"\",\"stepType\":\"script\",\"stepId\":\"script\",\"stepAttributes\":{\"implementMethod\":\"sql-script\",\"codeBlock\":\"select * from test_in_b where sip<>'1'\"},\"inputFields\":[{\"fieldName\":\"a\",\"streamFieldName\":\"a\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}],\"outputFields\":[]}},{\"stepFrom\":[\"bbb\"],\"stepInfo\":{\"id\":\"789\",\"name\":\"bbbcopy\",\"stepSource\":\"system\",\"dataSourceStepType\":\"\",\"stepType\":\"script\",\"stepId\":\"script\",\"stepAttributes\":{\"implementMethod\":\"sql-script\",\"codeBlock\":\"select * from bbb where sip<>'168430086'\"},\"inputFields\":[{\"fieldName\":\"a\",\"streamFieldName\":\"a\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}],\"outputFields\":[{\"fieldName\":\"a\",\"streamFieldName\":\"a\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}]}},{\"stepFrom\":[\"bbbcopy\"],\"stepInfo\":{\"id\":\"abc\",\"name\":\"test_out_a\",\"stepSource\":\"dataSource\",\"dataSourceStepType\":\"dataSourceOutput\",\"stepType\":\"mysql\",\"stepId\":\"7e1a8000fe5046cd98c371c7543133b9\",\"stepAttributes\":{\"connectUrl\":\"jdbc:mysql://192.168.31.164:3306/test?characterEncoding=utf-8&serverTimezone=Asia/Shanghai\",\"dataBaseName\":\"test\",\"source\":\"sink_1\",\"properties\":{\"password\":\"1122333\",\"user\":\"root\"},\"tableName\":\"sink_1\"},\"inputFields\":[{\"fieldName\":\"sip\",\"streamFieldName\":\"sip\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"sp\",\"streamFieldName\":\"sp\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dip\",\"streamFieldName\":\"dip\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dp\",\"streamFieldName\":\"dp\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"src_c\",\"streamFieldName\":\"src_c\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dst_c\",\"streamFieldName\":\"dst_c\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"ln1\",\"streamFieldName\":\"ln1\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}],\"outputFields\":[]}}],\"redisConfig\":{\"host\":\"192.168.31.219\",\"port\":6379,\"password\":null,\"database\":11},\"mysqlConfig\":{\"connection_url\":\"jdbc:mysql://192.168.31.164:3306/compute_product?characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false\",\"user_name\":\"root\",\"password\":\"1122333\",\"parameters\":null}}"
-
-    val info = JSON.parseObject(str, classOf[SparkTransDTO])
+    val info = JSON.parseObject(response.body, classOf[SparkTransDTO])
 
     SparkInfoTransfer.transfer(info)
-
-//    val jobApiDTO: JobApiDTO = JSON.parseObject(response.body, classOf[JobApiDTO])
-
-//    val projectInfo = JobInfoTransfer.portalModel2SparkModel(jobApiDTO)
 
     val sparkConf = createSparkConf()
     val spark = SparkSession.builder().config(sparkConf).getOrCreate()
@@ -319,18 +313,12 @@ object SparkJobStarter extends Logging {
         ds = df
       }
 
-      config.getOutputFields.foreach(out => {
+      config.getInputFields.foreach(out => {
         if (ds.columns.contains(out.getFieldName)) {
           if (!out.getConstant) ds = ds.withColumn(out.getStreamFieldName, ds.col(out.getFieldName))
           else ds = ds.withColumn(out.getFieldName, new Column(out.getConstantValue))
         }
       })
-
-      val allCols = ds.schema.map(_.name)
-      val needCols = config.getOutputFields.asScala
-      allCols.foreach { col =>
-        if (!needCols.contains(col)) ds = ds.drop(col)
-      }
 
       println("[INFO] output dataframe: ")
       ds.show(5)
