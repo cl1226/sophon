@@ -7,7 +7,8 @@ class Hdfs extends File {
    * Get DataFrame from this Static Input.
    **/
   override def getDataset(spark: SparkSession): Dataset[Row] = {
-    val path = buildPathWithDefaultSchema(sourceAttribute.connection_url, "hdfs://")
+    val attrs = config.getStepAttributes
+    val path = buildPathWithDefaultSchema(attrs.get("connectAddress").toString, "hdfs://")
     fileReader(spark, path)
   }
 }

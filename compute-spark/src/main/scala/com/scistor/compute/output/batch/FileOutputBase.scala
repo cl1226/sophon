@@ -4,26 +4,24 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 
 import com.scistor.compute.apis.BaseOutput
-import com.scistor.compute.model.spark.SinkAttribute
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{DataFrameWriter, Dataset, Row, SaveMode}
 
 abstract class FileOutputBase extends BaseOutput {
 
-  var sink: SinkAttribute = _
+  var config: TransStepDTO = _
 
   /**
-   * Set SinkAttribute.
+   * Set Config.
    **/
-  override def setSink(sink: SinkAttribute): Unit = {
-    this.sink = sink
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get SinkAttribute.
+   * Get Config.
    **/
-  override def getSink(): SinkAttribute = {
-    this.sink
-  }
+  override def getConfig(): TransStepDTO = config
 
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
@@ -33,8 +31,8 @@ abstract class FileOutputBase extends BaseOutput {
   }
 
   protected def fileWriter(df: Dataset[Row]): DataFrameWriter[Row] = {
-    var writer = df.write.mode(sink.sinkModel)
-    writer
+    val attrs = config.getStepAttributes
+    df.write.mode(attrs.get("format").toString.toLowerCase())
   }
 
   protected def buildPathWithDefaultSchema(uri: String, defaultUriSchema: String): String = {
@@ -48,11 +46,12 @@ abstract class FileOutputBase extends BaseOutput {
   }
 
   def processImpl(df: Dataset[Row], defaultUriSchema: String): Unit = {
+    val attrs = config.getStepAttributes
     val writer = fileWriter(df)
-    var path = buildPathWithDefaultSchema(sink.sink_connection_url, defaultUriSchema)
-    var format = sink.sinkFormat.name()
+    var path = buildPathWithDefaultSchema(attrs.get("connectAddress").toString, defaultUriSchema)
+    val format = attrs.get("format").toString.toLowerCase()
     format match {
-      case "csv" => writer.option("delimiter", sink.csvSplit).mode(saveMode = SaveMode.Append).csv(path)
+      case "csv" => writer.option("delimiter", attrs.get("split").toString).mode(saveMode = SaveMode.Append).csv(path)
       case "json" =>
         val calendar = Calendar.getInstance()
         val format = new SimpleDateFormat("yyyy-MM-dd")

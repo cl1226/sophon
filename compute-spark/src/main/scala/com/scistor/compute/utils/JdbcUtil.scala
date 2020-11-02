@@ -3,7 +3,7 @@ package com.scistor.compute.utils
 import java.util
 import java.util.{Calendar, Properties}
 
-import com.scistor.compute.model.portal.ConnectConfig
+import com.scistor.compute.model.remote.ConnectConfig
 import org.apache.commons.lang3.time.FastDateFormat
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{DateType, LongType, StringType, StructField, StructType}

@@ -3,30 +3,32 @@ package com.scistor.compute.output.batch
 import java.io.{InputStream, PipedInputStream, PipedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.sql.{Connection, DriverManager, SQLException}
+import java.util
+import java.util.Properties
 
 import com.scistor.compute.apis.BaseOutput
-import com.scistor.compute.model.spark.{SinkAttribute, SourceAttribute}
-import org.apache.spark.sql.{DataFrame, Dataset, Row}
+import com.scistor.compute.model.remote.TransStepDTO
+import org.apache.spark.sql.{Dataset, Row}
 import org.postgresql.copy.CopyManager
 import org.postgresql.core.BaseConnection
 
+import scala.collection.JavaConversions._
+
 class Postgresql extends BaseOutput {
 
-  var sinkAttribute: SinkAttribute = _
+  var config: TransStepDTO = _
 
   /**
-   * Set SinkAttribute.
+   * Set Config.
    **/
-  override def setSink(sink: SinkAttribute): Unit = {
-    this.sinkAttribute = sink
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get SinkAttribute.
+   * Get Config.
    **/
-  override def getSink(): SinkAttribute = {
-    this.sinkAttribute
-  }
+  override def getConfig(): TransStepDTO = config
 
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
@@ -59,14 +61,22 @@ class Postgresql extends BaseOutput {
     in
   }
 
-  def copyIn(data: Array[Row], sink: SinkAttribute): Long = {
+  def copyIn(data: Array[Row]): Long = {
+    val attrs = config.getStepAttributes
     var conn: Connection = null
+    val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     try {
-      println(s"postgresql url: ${sink.sink_connection_url}")
-      Class.forName("org.postgresql.Driver")
-      conn = DriverManager.getConnection(sink.sink_connection_url, sink.sink_connection_username, sink.sink_connection_password)
+      println(s"postgresql url: ${attrs.get("connectUrl").toString}")
+
+      val prop = new java.util.Properties
+      for ((k, v) <- definedProps) {
+        prop.setProperty(k, v.toString)
+      }
+      prop.setProperty("driver", "org.postgresql.Driver")
+      conn = DriverManager.getConnection(attrs.get("connectUrl").toString, prop)
+
       val copyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
-      val tableName = sink.sinknamespace.split("\\.")(3)
+      val tableName = definedProps.get("tableName").toString
       val cmd = s"COPY $tableName from STDIN DELIMITER ','"
       println(s"copy cmd: $cmd")
       val count = copyManager.copyIn(cmd, genPipedInputStream(data))
@@ -83,23 +93,29 @@ class Postgresql extends BaseOutput {
   }
 
   override def process(df: Dataset[Row]): Unit = {
-    val params = sinkAttribute.parameters
-    val saveType = params.getOrDefault("saveType", "jdbc")
+    val attrs = config.getStepAttributes
+    val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
+    val saveType = definedProps.getOrDefault("saveType", "jdbc")
 
     saveType match {
       case "jdbc" => {
-        val saveMode = params.getOrDefault("saveMode", "append")
-        val prop = new java.util.Properties
+        val saveMode = definedProps.getOrDefault("saveMode", "append").toString
+        val prop = new Properties
+        for ((k, v) <- definedProps) {
+          prop.setProperty(k, v.toString)
+        }
         prop.setProperty("driver", "org.postgresql.Driver")
-        prop.setProperty("user", sinkAttribute.sink_connection_username)
-        prop.setProperty("password", sinkAttribute.sink_connection_password)
 
-        df.write.mode(saveMode).jdbc(sinkAttribute.sink_connection_url, sinkAttribute.tableName, prop)
+        df.write.mode(saveMode).jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, prop)
       }
       case "copy" => {
-        println("copy into postgresql...")
+        println("copy into gaussdb...")
+        val columns: StringBuilder = new StringBuilder
+        df.schema.foreach(col => {
+          columns.append(s""""${col.name}"""").append(",")
+        })
         df.rdd.mapPartitions(x => {
-          copyIn(x.toArray, sinkAttribute)
+          copyIn(x.toArray)
           x
         }).count()
       }

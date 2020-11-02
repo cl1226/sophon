@@ -1,26 +1,24 @@
 package com.scistor.compute.input.batch
 
 import com.scistor.compute.apis.BaseStaticInput
-import com.scistor.compute.model.spark.SourceAttribute
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
+import com.scistor.compute.model.remote.TransStepDTO
+import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 class Hbase extends BaseStaticInput {
 
-  var source: SourceAttribute = _
+  var config: TransStepDTO = _
 
   /**
-   * Set SourceAttribute.
+   * Set Config.
    **/
-  override def setSource(source: SourceAttribute): Unit = {
-    this.source = source
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get SourceAttribute.
+   * Get Config.
    **/
-  override def getSource(): SourceAttribute = {
-    this.source
-  }
+  override def getConfig(): TransStepDTO = config
 
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.

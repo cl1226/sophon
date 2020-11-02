@@ -1,37 +1,45 @@
 package com.scistor.compute.output.batch
 
+import java.util
+
 import com.scistor.compute.apis.BaseOutput
-import com.scistor.compute.model.spark.SinkAttribute
-import org.apache.commons.lang3.StringUtils
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import org.elasticsearch.spark.sql._
+
+import scala.collection.JavaConversions._
 
 class Elasticsearch extends BaseOutput {
 
   var esCfg: Map[String, String] = Map()
   val esPrefix = "es."
 
-  var sink: SinkAttribute = _
+  var config: TransStepDTO = _
 
   /**
-   * Set SinkAttribute.
+   * Set Config.
    **/
-  override def setSink(sink: SinkAttribute): Unit = {
-    this.sink = sink
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get SinkAttribute.
+   * Get Config.
    **/
-  override def getSink(): SinkAttribute = {
-    this.sink
-  }
+  override def getConfig(): TransStepDTO = config
 
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
   override def validate(): (Boolean, String) = {
-    (true, "")
+    val attrs = config.getStepAttributes
+    attrs.containsKey("hosts") && attrs.containsKey("index") && attrs.get("hosts").toString.length > 0 match {
+      case true => {
+        // TODO CHECK hosts
+        (true, "")
+      }
+      case false => (false, "please specify [hosts] as a non-empty string list")
+    }
   }
 
   /**
@@ -40,16 +48,19 @@ class Elasticsearch extends BaseOutput {
   override def prepare(spark: SparkSession): Unit = {
     super.prepare(spark)
 
-    esCfg += ("index" -> sink.getDatabaseName)
-    esCfg += ("index_type" -> sink.getTableName)
-    esCfg += ("index_time_format" -> "yyyy.MM.dd")
-    esCfg += ("es.nodes" -> sink.sink_connection_url.split(":")(0))
+    val attrs = config.getStepAttributes
 
-    if(StringUtils.isNoneBlank(sink.sink_connection_username)) {
-      esCfg += ("es.net.http.auth.user" -> sink.sink_connection_username)
+    esCfg += ("index" -> attrs.get("index").toString)
+    esCfg += ("index_type" -> attrs.getOrElse("type", "").toString)
+    esCfg += ("index_time_format" -> "yyyy.MM.dd")
+    esCfg += ("es.nodes" -> attrs.get("hosts").toString.split(":")(0))
+
+    val extraProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
+    if (extraProps.containsKey("user")) {
+      esCfg += ("es.net.http.auth.user" -> extraProps.get("user").toString)
     }
-    if(StringUtils.isNoneBlank(sink.sink_connection_password)) {
-      esCfg += ("es.net.http.auth.pass" -> sink.sink_connection_password)
+    if (extraProps.containsKey("password")) {
+      esCfg += ("es.net.http.auth.user" -> extraProps.get("password").toString)
     }
 
     println("[INFO] Output ElasticSearch Params:")

@@ -1,6 +1,6 @@
 package com.scistor.compute.redis;
 
-import com.scistor.compute.model.portal.RedisConfig;
+import com.scistor.compute.model.remote.RedisConfig;
 
 public class JedisUtil {
 

@@ -1,30 +1,35 @@
 package com.scistor.compute.input.batch
 
 import java.text.{DateFormat, SimpleDateFormat}
+import java.util
 import java.util.{Calendar, Properties}
 
+import com.alibaba.fastjson.JSON
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
 class Mysql extends Jdbc {
 
   override def getDataset(spark: SparkSession): Dataset[Row] = {
-    jdbcReader(spark, "com.mysql.jdbc.Driver")
+    jdbcReader(spark, "com.mysql.cj.jdbc.Driver")
   }
 
   override def initProp(driver: String): (Properties, Array[String]) = {
+    val attrs = config.getStepAttributes
     val prop = new Properties()
+    val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
+    for ((k, v) <- definedProps) {
+      prop.setProperty(k, v.toString)
+    }
     prop.setProperty("driver", driver)
-    prop.setProperty("user", config.username)
-    prop.setProperty("password", config.password)
 
-    val params = config.parameters
-    val partColumnName = params.getOrDefault("partColumnName", "")
+    val partColumnName = definedProps.getOrElse("partColumnName", "")
     partColumnName match {
       case "" => (prop, new Array[String](0))
       case _ => {
-        val numPartitions: Int = params.getOrDefault("numPartitions", "1").toInt
+        val numPartitions: Int = definedProps.getOrElse("numPartitions", "1").asInstanceOf[Int]
 
         var precision = 0
         val totalLen = 1

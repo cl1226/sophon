@@ -4,16 +4,13 @@ import java.io.File
 
 import com.alibaba.fastjson.JSON
 import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput, BaseTransform, Plugin}
-import com.scistor.compute.interfacex.{ComputeOperator, SparkProcessProxy, SparkProcessProxy2}
-import com.scistor.compute.model.portal.JobApiDTO
-import com.scistor.compute.model.spark.{ComputeAttribute, ComputeJob, ComputeSinkAttribute, OperatorType, ProjectInfo}
+import com.scistor.compute.model.remote.SparkTransDTO
+import com.scistor.compute.model.spark.ProjectInfo
 import com.scistor.compute.transform.UdfRegister
 import com.scistor.compute.utils.CommonUtil.writeSimpleData
-import com.scistor.compute.utils.JobInfoTransfer.jedis
-import com.scistor.compute.utils.{AsciiArt, ClassUtils, CommonUtil, CompressionUtils, ConfigBuilder, JdbcUtil, JobInfoTransfer}
+import com.scistor.compute.utils.{AsciiArt, CompressionUtils, ConfigBuilder, JdbcUtil, SparkInfoTransfer}
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.ComputeProcess.{computeOperatorProcess, computeSparkProcess, computeSparkProcess2, pipeLineProcess, processDynamicCode, processPrivate}
 import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.apache.spark.storage.StorageLevel
@@ -48,20 +45,26 @@ object SparkJobStarter extends Logging {
 
     val response: http.HttpResponse[String] = Http(args(0)).header("Accept", "application/json").timeout(10000, 1000).asString
 
-    val jobApiDTO: JobApiDTO = JSON.parseObject(response.body, classOf[JobApiDTO])
+    val str: String = "{\"transName\":\"模型_SQL脚本测试\",\"stepList\":[{\"stepFrom\":[],\"stepInfo\":{\"id\":\"123\",\"name\":\"test_in_b\",\"stepSource\":\"dataSource\",\"dataSourceStepType\":\"dataSourceInput\",\"stepType\":\"mysql\",\"stepId\":\"67ae9a3a140f49d98ee1a1d406fbb702\",\"stepAttributes\":{\"connectUrl\":\"jdbc:mysql://192.168.31.164:3306/test?characterEncoding=utf-8&serverTimezone=Asia/Shanghai\",\"dataBaseName\":\"test\",\"source\":\"source_1\",\"properties\":{\"password\":\"1122333\",\"user\":\"root\"},\"tableName\":\"source_1\"},\"inputFields\":[],\"outputFields\":[{\"fieldName\":\"sip\",\"streamFieldName\":\"sip\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"sp\",\"streamFieldName\":\"sp\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dip\",\"streamFieldName\":\"dip\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dp\",\"streamFieldName\":\"dp\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"src_c\",\"streamFieldName\":\"src_c\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dst_c\",\"streamFieldName\":\"dst_c\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"ln1\",\"streamFieldName\":\"ln1\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}]}},{\"stepFrom\":[\"test_in_b\"],\"stepInfo\":{\"id\":\"456\",\"name\":\"bbb\",\"stepSource\":\"system\",\"dataSourceStepType\":\"\",\"stepType\":\"script\",\"stepId\":\"script\",\"stepAttributes\":{\"implementMethod\":\"sql-script\",\"codeBlock\":\"select * from test_in_b where sip<>'1'\"},\"inputFields\":[{\"fieldName\":\"a\",\"streamFieldName\":\"a\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}],\"outputFields\":[]}},{\"stepFrom\":[\"bbb\"],\"stepInfo\":{\"id\":\"789\",\"name\":\"bbbcopy\",\"stepSource\":\"system\",\"dataSourceStepType\":\"\",\"stepType\":\"script\",\"stepId\":\"script\",\"stepAttributes\":{\"implementMethod\":\"sql-script\",\"codeBlock\":\"select * from bbb where sip<>'168430086'\"},\"inputFields\":[{\"fieldName\":\"a\",\"streamFieldName\":\"a\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}],\"outputFields\":[{\"fieldName\":\"a\",\"streamFieldName\":\"a\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}]}},{\"stepFrom\":[\"bbbcopy\"],\"stepInfo\":{\"id\":\"abc\",\"name\":\"test_out_a\",\"stepSource\":\"dataSource\",\"dataSourceStepType\":\"dataSourceOutput\",\"stepType\":\"mysql\",\"stepId\":\"7e1a8000fe5046cd98c371c7543133b9\",\"stepAttributes\":{\"connectUrl\":\"jdbc:mysql://192.168.31.164:3306/test?characterEncoding=utf-8&serverTimezone=Asia/Shanghai\",\"dataBaseName\":\"test\",\"source\":\"sink_1\",\"properties\":{\"password\":\"1122333\",\"user\":\"root\"},\"tableName\":\"sink_1\"},\"inputFields\":[{\"fieldName\":\"sip\",\"streamFieldName\":\"sip\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"sp\",\"streamFieldName\":\"sp\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dip\",\"streamFieldName\":\"dip\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dp\",\"streamFieldName\":\"dp\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"src_c\",\"streamFieldName\":\"src_c\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"dst_c\",\"streamFieldName\":\"dst_c\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null},{\"fieldName\":\"ln1\",\"streamFieldName\":\"ln1\",\"fieldType\":\"string\",\"isConstant\":false,\"constantValue\":null}],\"outputFields\":[]}}],\"redisConfig\":{\"host\":\"192.168.31.219\",\"port\":6379,\"password\":null,\"database\":11},\"mysqlConfig\":{\"connection_url\":\"jdbc:mysql://192.168.31.164:3306/compute_product?characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false\",\"user_name\":\"root\",\"password\":\"1122333\",\"parameters\":null}}"
 
-    val projectInfo = JobInfoTransfer.portalModel2SparkModel(jobApiDTO)
+    val info = JSON.parseObject(str, classOf[SparkTransDTO])
+
+    SparkInfoTransfer.transfer(info)
+
+//    val jobApiDTO: JobApiDTO = JSON.parseObject(response.body, classOf[JobApiDTO])
+
+//    val projectInfo = JobInfoTransfer.portalModel2SparkModel(jobApiDTO)
 
     val sparkConf = createSparkConf()
     val spark = SparkSession.builder().config(sparkConf).getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
-    entrypoint(projectInfo)
+    entrypoint()
 
   }
 
-  private def entrypoint(info: ProjectInfo) = {
+  private def entrypoint() = {
     val configBuilder = new ConfigBuilder
     println("[INFO] loading SparkConf: ")
     val sparkConf = createSparkConf()
@@ -80,12 +83,12 @@ object SparkJobStarter extends Logging {
     val transforms = configBuilder.createTransforms("batch")
     val outputs = configBuilder.createOutputs[BaseOutput]("batch")
 
-    baseValidate(staticInputs, streamingInputs, transforms.values.toList, outputs)
+    validate(staticInputs, streamingInputs, transforms, outputs)
 
     if (streamingInputs.nonEmpty) {
-      streamingProcessing(sparkSession, staticInputs, streamingInputs, transforms, outputs, info)
+      streamingProcessing(sparkSession, staticInputs, streamingInputs, transforms, outputs)
     } else {
-      batchProcessing(sparkSession, staticInputs, transforms, outputs, info)
+      batchProcessing(sparkSession, staticInputs, transforms, outputs)
     }
   }
 
@@ -94,32 +97,29 @@ object SparkJobStarter extends Logging {
    **/
   private def batchProcessing(sparkSession: SparkSession,
                               staticInputs: List[BaseStaticInput],
-                              transforms: Map[String, BaseTransform],
-                              outputs: List[BaseOutput],
-                              info: ProjectInfo): Unit = {
-    jobName = sparkSession.sparkContext.getConf.get("spark.app.name", info.getProjectName)
+                              transforms: List[BaseTransform],
+                              outputs: List[BaseOutput]): Unit = {
+    jobName = sparkSession.sparkContext.getConf.get("spark.app.name", SparkInfoTransfer.jobName)
 
-    prepare(sparkSession, info)
-
-    basePrepare(sparkSession, staticInputs, outputs)
+    basePrepare(sparkSession, staticInputs, transforms, outputs)
 
     // when you see this ASCII logo, scistor compute platform is really started.
     showScistorAsciiLogo()
 
     if (staticInputs.nonEmpty) {
-      registerInputTempViewWithHead(staticInputs, sparkSession, info)
+      registerInputTempViewWithHead(staticInputs, sparkSession)
 
-      info.getRunJobs.asScala.foreach(step => {
+      for (f <- transforms) {
         breakable {
-          val df = viewTableMap.get(step.getDataSource)
+          val df = viewTableMap.get(f.getConfig().getStepFrom)
           if(!df.isDefined) break
-          transform(df.get, step, transforms, sparkSession, info)
-          outputs.remove(step.getJobName)
+          val tempFrame = f.process(sparkSession, df.get)
+          registerTempView(f.getConfig().getName, tempFrame)
         }
-      })
+      }
 
       outputs.foreach(output => {
-        sink(sparkSession, output, info, null)
+        sink(sparkSession, output, null)
       })
 
       sparkSession.stop()
@@ -138,12 +138,11 @@ object SparkJobStarter extends Logging {
   private def streamingProcessing(sparkSession: SparkSession,
                                   staticInputs: List[BaseStaticInput],
                                   streamingInputs: List[BaseStreamingInput[Any]],
-                                  transforms: Map[String, BaseTransform],
-                                  outputs: List[BaseOutput],
-                                  info: ProjectInfo
+                                  transforms: List[BaseTransform],
+                                  outputs: List[BaseOutput]
                                  ): Unit = {
-
-    jobName = sparkSession.sparkContext.getConf.get("spark.app.name", info.getProjectName)
+    val info = SparkInfoTransfer.jobInfo
+    jobName = sparkSession.sparkContext.getConf.get("spark.app.name", SparkInfoTransfer.jobName)
     val duration = sparkSession.sparkContext.getConf.getLong("spark.streaming.batchDuration", 10L)
     val ssc = new StreamingContext(sparkSession.sparkContext, Seconds(duration))
 
@@ -165,27 +164,24 @@ object SparkJobStarter extends Logging {
           // 写入mysql，统计输入量
           new JdbcUtil(sparkSession, info.getMysqlConfig).writeDataCount("0", ds.count().toString, jobName)
 
-          val tableName = info.getAttribute.sourcenamespace.split("\\.")(2)
-          if (info.getAttribute.isInstanceOf[ComputeAttribute]) {
-            info.getAttribute.asInstanceOf[ComputeAttribute].getOutputMapping.foreach(out => {
-              ds = ds.withColumnRenamed(out._1, out._2.getFieldName)
-            })
-          }
+          val tableName = streamingInput.getConfig().getName
+          streamingInput.getConfig().getOutputFields.asScala.foreach(out => {
+            ds = ds.withColumnRenamed(out.getStreamFieldName, out.getFieldName)
+          })
           viewTableMap += (tableName -> ds)
           ds.persist(StorageLevel.MEMORY_AND_DISK)
 
-          info.getRunJobs.asScala.foreach(step => {
-            ds = transform(ds, step, transforms, sparkSession, info)
+          transforms.foreach(transform => {
+            ds = transform.process(sparkSession, ds)
           })
+
           ds.unpersist()
 
-          if (info.isGetSchema) System.exit(1)
-
           outputs.foreach(output => {
-            sink(sparkSession, output, info, ds)
+            sink(sparkSession, output, ds)
           })
         } else {
-          logInfo(s"${info.getAttribute.getGroupid} consumer 0 record!")
+          logInfo(s"consumer 0 record!")
         }
       }
     )
@@ -197,22 +193,21 @@ object SparkJobStarter extends Logging {
    * Return Head Static Input DataSet
    */
   private[scistor] def registerInputTempViewWithHead(staticInputs: List[BaseStaticInput],
-                                                     sparkSession: SparkSession,
-                                                     info: ProjectInfo): Unit = {
+                                                     sparkSession: SparkSession): Unit = {
     if (staticInputs.nonEmpty) {
       for (input <- staticInputs.slice(0, staticInputs.length)) {
         val ds = input.getDataset(sparkSession)
-        convertDataType(ds, info)
+        convertDataType(ds, input)
         registerInputTempView(input, ds)
         // 写入mysql，统计输入量
-        new JdbcUtil(sparkSession, info.getMysqlConfig).writeDataCount("0", ds.count().toString, jobName)
+        new JdbcUtil(sparkSession, SparkInfoTransfer.jobInfo.getMysqlConfig).writeDataCount("0", ds.count().toString, jobName)
       }
     } else {
       throw new RuntimeException("You must set static input plugin at least once.")
     }
   }
 
-  private[scistor] def baseValidate(plugins: List[Plugin]*): Unit = {
+  private[scistor] def validate(plugins: List[Plugin]*): Unit = {
     var configValid = true
     for (pluginList <- plugins) {
       for (p <- pluginList) {
@@ -288,7 +283,7 @@ object SparkJobStarter extends Logging {
   }
 
   private[scistor] def registerInputTempView(input: BaseStaticInput, ds: Dataset[Row]): Unit = {
-    val tableName = input.getSource().getSourcenamespace.split("\\.")(2)
+    val tableName = input.getConfig().getName
     registerTempView(tableName, ds)
   }
 
@@ -300,113 +295,53 @@ object SparkJobStarter extends Logging {
   /**
    * Convert data source field type to spark schema dataType
    */
-  private[scistor] def convertDataType(ds: Dataset[Row], info: ProjectInfo): Unit = {
+  private[scistor] def convertDataType(ds: Dataset[Row], input: BaseStaticInput): Unit = {
     // 数据源schema dataType -> spark schema dataType
-    info.getAttribute.asInstanceOf[ComputeAttribute].getOutputMapping.foreach(field => {
-      if (ds.columns.contains(field._2.getFieldName)) {
-        val dataType = field._2.getDataType.getSparkDataType
-        ds.withColumn(field._2.getFieldName, ds.col(field._2.getFieldName).cast(dataType))
+    input.getConfig().getOutputFields.foreach(field => {
+      if (ds.columns.contains(field.getFieldName)) {
+        val fieldType = field.getFieldType
+        ds.withColumn(field.getFieldName, ds.col(field.getFieldName).cast(fieldType))
       }
     })
-  }
-
-  private[scistor] def transform(dfinput: DataFrame, step: ComputeJob, transforms: Map[String, BaseTransform], session: SparkSession, job: ProjectInfo): DataFrame = {
-    dfinput.createOrReplaceTempView(step.getDataSource)
-    jedis.set(s"""${jobName}-${step.getJobName}-STATUS""", "RUNNING")
-
-    var df = dfinput
-
-    // execute java/spark jar
-    step.getUdos.asScala.foreach(udo => {
-      session.sparkContext.addJar(udo.getJarPath)
-      val operator = ClassUtils.getUserOperatorImpl(udo)
-      operator match {
-        // process user define java jar(map function)
-        case operator: ComputeOperator => df = computeOperatorProcess(session, df, udo, operator, step)
-        // process user define spark jar(single dataset)
-        case dfProcess: SparkProcessProxy => df = computeSparkProcess(session, df, udo, dfProcess)
-        // process user define spark jar(two dataset)
-        case df2Process: SparkProcessProxy2 => df = computeSparkProcess2(session, df, udo, df2Process)
-        // other
-        case _ => throw new RuntimeException(s"Unsupported define operator: [${udo.getClassFullName}], please check it!")
-      }
-    })
-
-    // execute java/scala code
-    step.getProcess.asScala.foreach(invokeInfo => {
-      step.getOperatorType match {
-        case OperatorType.PRIVATE => {
-          df = processPrivate(session, df, invokeInfo)
-        }
-        case OperatorType.JAVA | OperatorType.SCALA => {
-          df = processDynamicCode(session, df, invokeInfo, step)
-        }
-        case _ => throw new RuntimeException(s"Unsupported operator type: [${step.getOperatorType}], please check it!")
-      }
-    })
-
-    // execute private sophon
-    val privateTransform = transforms.get(step.getJobId).get
-    df = privateTransform.process(session, df)
-
-    // execute sql
-    step.getProcessSql.foreach(processSQL => {
-      df = session.sql(processSQL)
-    })
-
-    // execute python/shell
-    step.getCommand.asScala.foreach(command => {
-      df = pipeLineProcess(session, df, command._1, command._2.toArray[String](Array[String]()), step.getCommandMaping.get(command._1))
-    })
-
-    registerTempView(step.getDataSource, df)
-    registerTempView(step.getJobName, df)
-
-    jedis.set(s"""${jobName}-${step.getJobName}-STATUS""", "FINISHED")
-    CommonUtil.writeSimpleData(df, job, s"${jobName}-${step.getJobName}")
-
-    df
   }
 
   private[scistor] def sink(sparkSession: SparkSession,
                             output: BaseOutput,
-                            info: ProjectInfo,
                             df: DataFrame): Unit = {
-    if (output.getSink().isInstanceOf[ComputeSinkAttribute]) {
-      val databaseEnglish = output.getSink().sinknamespace.split("\\.")(2)
-      val option = viewTableMap.get(databaseEnglish)
-      breakable {
-        var ds: Dataset[Row] = null
-        if (df == null) {
-          if (!option.isDefined) break
-          ds = option.get
-        } else {
-          ds = df
-        }
-
-        output.getSink().asInstanceOf[ComputeSinkAttribute].getOutputMapping.foreach(out => {
-          if (ds.columns.contains(out._2.getFieldName)) {
-            if (!out._2.isConstant) ds = ds.withColumn(out._1, ds.col(out._2.getFieldName))
-            else ds = ds.withColumn(out._1, new Column(out._2.getConstantValue))
-          }
-        })
-        val allCols = ds.schema.map(_.name)
-        val needCols = output.getSink().asInstanceOf[ComputeSinkAttribute].getOutputMapping.map(_._1)
-        allCols.foreach { col =>
-          if (!needCols.contains(col)) ds = ds.drop(col)
-        }
-
-        println("[INFO] output dataframe: ")
-        ds.show(5)
-
-        if (ds.take(1).size > 0) {
-          writeSimpleData(ds, info, s"""${jobName}-result""")
-        }
-
-        // 写入mysql，统计输出
-        new JdbcUtil(sparkSession, info.getMysqlConfig).writeDataCount(ds.count().toString, "0", jobName)
-        output.process(ds)
+    val config = output.getConfig()
+    val option = viewTableMap.get(config.getStepFrom)
+    breakable {
+      var ds: Dataset[Row] = null
+      if (df == null) {
+        if (!option.isDefined) break
+        ds = option.get
+      } else {
+        ds = df
       }
+
+      config.getOutputFields.foreach(out => {
+        if (ds.columns.contains(out.getFieldName)) {
+          if (!out.getConstant) ds = ds.withColumn(out.getStreamFieldName, ds.col(out.getFieldName))
+          else ds = ds.withColumn(out.getFieldName, new Column(out.getConstantValue))
+        }
+      })
+
+      val allCols = ds.schema.map(_.name)
+      val needCols = config.getOutputFields.asScala
+      allCols.foreach { col =>
+        if (!needCols.contains(col)) ds = ds.drop(col)
+      }
+
+      println("[INFO] output dataframe: ")
+      ds.show(5)
+
+      if (ds.take(1).size > 0) {
+        writeSimpleData(ds, s"${SparkInfoTransfer.jobName} - ${config.getName}")
+      }
+
+      // 写入mysql，统计输出
+      new JdbcUtil(sparkSession, SparkInfoTransfer.jobInfo.getMysqlConfig).writeDataCount(ds.count().toString, "0", jobName)
+      output.process(ds)
     }
   }
 

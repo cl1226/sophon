@@ -5,3 +5,8 @@ com.scistor.compute.transform.Convert
 com.scistor.compute.transform.Join
 com.scistor.compute.transform.Repartition
 com.scistor.compute.transform.Sample
+com.scistor.compute.transform.BatchFilter
+com.scistor.compute.transform.Filter
+com.scistor.compute.transform.Script
+com.scistor.compute.transform.Add
+com.scistor.compute.transform.UserDefinedTransform

@@ -1,20 +1,20 @@
 package com.scistor.compute.apis
 
-import com.scistor.compute.model.spark.ComputeJob
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.expressions.{UserDefinedAggregateFunction, UserDefinedFunction}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 abstract class BaseTransform extends Plugin {
 
   /**
-   * Set Attribute.
+   * Set Config.
    * */
-  def setAttribute(attr: ComputeJob)
+  def setConfig(config: TransStepDTO)
 
   /**
-   * get Attribute.
+   * Get Config.
    * */
-  def getAttribute(): ComputeJob
+  def getConfig(): TransStepDTO
 
   def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row]
 

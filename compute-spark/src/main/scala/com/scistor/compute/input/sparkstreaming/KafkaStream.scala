@@ -4,6 +4,7 @@ import java.util.Properties
 
 import com.scistor.compute.apis.BaseStreamingInput
 import com.scistor.compute.input.sparkstreaming.kafkaStreamProcess.{CsvStreamProcess, JsonStreamProcess}
+import com.scistor.compute.model.remote.TransStepDTO
 import com.scistor.compute.model.spark.{DecodeType, SinkAttribute, SourceAttribute}
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.rdd.RDD
@@ -18,21 +19,21 @@ import scala.collection.JavaConversions._
 
 class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
 
-  var sourceAttribute: SourceAttribute = _
+  var config: TransStepDTO = _
 
   var kafkaParams: Map[String, String] = _
 
   /**
-   * Set SourceAttribute.
+   * Set Config.
    **/
-  override def setSource(source: SourceAttribute): Unit = {
-    this.sourceAttribute = source
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get SourceAttribute.
+   * Get Config.
    **/
-  override def getSource(): SourceAttribute = sourceAttribute
+  override def getConfig(): TransStepDTO = config
 
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
@@ -44,15 +45,17 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
   override def prepare(spark: SparkSession): Unit = {
     super.prepare(spark)
 
+    val attrs = config.getStepAttributes
+
     val props = new Properties()
     props.setProperty("format", "json")
     props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
     props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-    props.setProperty("bootstrap.servers", sourceAttribute.bootstrap_urls)
-    props.setProperty("group.id", sourceAttribute.groupid)
+    props.setProperty("bootstrap.servers", attrs.getOrDefault("bootstrap_urls", "").toString)
+    props.setProperty("group.id", attrs.getOrDefault("group_id", "").toString)
     props.setProperty("enable.auto.commit", "false")
 
-    if (sourceAttribute.isKerberos){
+    if (attrs.containsKey("kerberos") && attrs.getOrElse("kerberos", "").toString.equals("true")){
       props.setProperty("security.protocol", "SASL_PLAINTEXT")
       props.setProperty("sasl.kerberos.service.name", "kafka")
     }
@@ -70,8 +73,8 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
   }
 
   override def getDStream(ssc: StreamingContext): DStream[ConsumerRecord[String, String]] = {
-
-    val topics = sourceAttribute.topic.split(",").toSet
+    val attrs = config.getStepAttributes
+    val topics = attrs.get("topic").toString.split(",").toSet
     val inputDStream : InputDStream[ConsumerRecord[String, String]] = KafkaUtils.createDirectStream(
       ssc,
       LocationStrategies.PreferConsistent,
@@ -81,12 +84,12 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
   }
 
   override def start(spark: SparkSession, ssc: StreamingContext, handler: Dataset[Row] => Unit): Unit = {
-
+    val attrs = config.getStepAttributes
     val inputDStream = getDStream(ssc)
 
-    val handlerInstance: KafkaStream = sourceAttribute.decodeType match {
-      case DecodeType.JSON => new JsonStreamProcess(sourceAttribute)
-      case DecodeType.CSV => new CsvStreamProcess(sourceAttribute)
+    val handlerInstance: KafkaStream = DecodeType.valueOf(attrs.get("decodeType").toString) match {
+      case DecodeType.JSON => new JsonStreamProcess(config)
+      case DecodeType.CSV => new CsvStreamProcess(config)
       case _ => null
     }
 
@@ -109,7 +112,7 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
           }
         }
       } else {
-        logInfo(s"${sourceAttribute.groupid} consumer 0 record")
+        logInfo(s"${config.getStepAttributes.get("groupid")} consumer 0 record")
       }
     })
   }

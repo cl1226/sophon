@@ -4,7 +4,7 @@ import com.scistor.compute.apis.BaseTransform
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
-class Repartition extends BaseTransform {
+class BatchFilter extends BaseTransform {
 
   var config: TransStepDTO = _
 
@@ -20,20 +20,10 @@ class Repartition extends BaseTransform {
    * */
   override def getConfig(): TransStepDTO = config
 
+  override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = ???
+
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
-  override def validate(): (Boolean, String) = {
-    val attrs = config.getStepAttributes
-    attrs.containsKey("numPartitions") && (attrs.get("numPartitions").asInstanceOf[Int] > 0) match {
-      case true => (true, "")
-      case false => (false, "please specify [numPartitions] as Integer > 0")
-    }
-  }
-
-  override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
-    val attrs = config.getStepAttributes
-    df.repartition(attrs.get("numPartitions").asInstanceOf[Int])
-  }
-
+  override def validate(): (Boolean, String) = ???
 }

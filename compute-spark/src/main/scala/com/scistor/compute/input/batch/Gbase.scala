@@ -1,6 +1,7 @@
 package com.scistor.compute.input.batch
 
 import java.text.{DateFormat, SimpleDateFormat}
+import java.util
 import java.util.{Calendar, Properties}
 
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
@@ -14,17 +15,18 @@ class Gbase extends Jdbc {
   }
 
   override def initProp(driver: String): (Properties, Array[String]) = {
+    val attrs = config.getStepAttributes
+    val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     val prop = new Properties()
     prop.setProperty("driver", driver)
-    prop.setProperty("user", config.username)
-    prop.setProperty("password", config.password)
+    prop.setProperty("user", definedProps.get("user").toString)
+    prop.setProperty("password", definedProps.get("password").toString)
 
-    val params = config.parameters
-    val partColumnName = params.getOrDefault("partColumnName", "")
+    val partColumnName = definedProps.getOrDefault("partColumnName", "").toString
     partColumnName match {
       case "" => (prop, new Array[String](0))
       case _ => {
-        val numPartitions: Int = params.getOrDefault("numPartitions", "1").toInt
+        val numPartitions: Int = definedProps.getOrDefault("numPartitions", "1").asInstanceOf[Int]
 
         var precision = 0
         val totalLen = 1

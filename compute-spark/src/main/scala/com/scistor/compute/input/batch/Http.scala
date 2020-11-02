@@ -1,32 +1,44 @@
 package com.scistor.compute.input.batch
 
+import java.util
+
 import com.scistor.compute.apis.BaseStaticInput
-import com.scistor.compute.model.spark.SourceAttribute
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import scalaj.http
 import scalaj.http.Http
 
 class Http extends BaseStaticInput {
 
-  var source: SourceAttribute = _
+  var config: TransStepDTO = _
 
   /**
-   * Set SourceAttribute.
+   * Set Config.
    * */
-  override def setSource(source: SourceAttribute): Unit = {
-    this.source = source
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get SourceAttribute.
+   * Get Config.
    * */
-  override def getSource(): SourceAttribute = source
+  override def getConfig(): TransStepDTO = config
 
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
   override def validate(): (Boolean, String) = {
-    (true, "")
+    val attrs = config.getStepAttributes
+    val extraProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
+    if (!attrs.containsKey("connectUrl")) {
+      (false, s"please specify [connectUrl] in ${attrs.get("dataSourceType")} as a non-empty string")
+    } else if (!extraProps.containsKey("user")) {
+      (false, s"please specify [user] in ${attrs.get("dataSourceType")} as a non-empty string")
+    } else if (!extraProps.containsKey("password")) {
+      (false, s"please specify [password] in ${attrs.get("dataSourceType")} as a non-empty string")
+    } else {
+      (true, "")
+    }
   }
 
   /**
@@ -34,14 +46,15 @@ class Http extends BaseStaticInput {
    * */
   override def getDataset(spark: SparkSession): Dataset[Row] = {
     import spark.implicits._
+    val attrs = config.getStepAttributes
 
-    val url = source.connection_url
+    val url = attrs.get("connectUrl").toString
     val response: http.HttpResponse[String] = Http(url).header("Accept", "application/json").timeout(10000, 1000).asString
     val result = response.body
 
     val ds = spark.createDataset(Seq(result))
 
-    val format = source.decodeType.name().toLowerCase()
+    val format = attrs.get("format").toString.toLowerCase()
     val reader = spark.read.format(format)
 
     format match {

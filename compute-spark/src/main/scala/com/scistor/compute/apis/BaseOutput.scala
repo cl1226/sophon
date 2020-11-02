@@ -1,19 +1,19 @@
 package com.scistor.compute.apis
 
-import com.scistor.compute.model.spark.SinkAttribute
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row}
 
 abstract class BaseOutput extends Plugin {
 
   /**
-   * Set SinkAttribute.
+   * Set Config.
    * */
-  def setSink(sink: SinkAttribute)
+  def setConfig(config: TransStepDTO)
 
   /**
-   * get SinkAttribute.
+   * Get Config.
    * */
-  def getSink(): SinkAttribute
+  def getConfig(): TransStepDTO
 
   def process(df: Dataset[Row])
 

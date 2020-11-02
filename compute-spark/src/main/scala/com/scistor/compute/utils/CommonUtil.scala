@@ -1,16 +1,17 @@
 package com.scistor.compute.utils
 
-import com.alibaba.fastjson.JSON
-import com.scistor.compute.model.spark.ProjectInfo
-import com.scistor.compute.utils.JobInfoTransfer.jedis
+import java.util
+import com.alibaba.fastjson.{JSON, JSONObject}
+import com.scistor.compute.model.remote.StreamFieldDTO
+import com.scistor.compute.model.spark.{ComputeField, DataType}
 import org.apache.spark.sql.DataFrame
 
 import scala.collection.JavaConverters._
 
 object CommonUtil {
 
-  def writeSimpleData(df: DataFrame, job: ProjectInfo, redisKey: String): Unit = {
-    val arrayData = df.take(job.getShowNumbers).map(_.getValuesMap(df.schema.map(_.name)).asInstanceOf[Map[String, Any]].mapValues(cell => {
+  def writeSimpleData(df: DataFrame, redisKey: String): Unit = {
+    val arrayData = df.take(20).map(_.getValuesMap(df.schema.map(_.name)).asInstanceOf[Map[String, Any]].mapValues(cell => {
       val truncate = 150
       val str = cell match {
         case null => "null"
@@ -26,7 +27,28 @@ object CommonUtil {
       }
     }).asJava)
 
-    if (arrayData.size > 0) jedis.set(redisKey, JSON.toJSON(arrayData).toString)
+    if (arrayData.size > 0) SparkInfoTransfer.jedis.set(redisKey, JSON.toJSON(arrayData).toString)
+  }
+
+  def portalField2ComputeField(portalFields: util.List[StreamFieldDTO]): util.List[ComputeField] = {
+    var computeFields = new util.ArrayList[ComputeField]()
+    for (f <- portalFields.asScala) {
+      val field = new ComputeField(f.getFieldName, DataType.valueOf(f.getFieldType), true)
+      field.setConstant(f.getConstant)
+      field.setConstantValue(f.getConstantValue)
+      field.setStructFieldJson(buildStreamFieldNameJson(f))
+      computeFields.add(field)
+    }
+    computeFields
+  }
+
+  def buildStreamFieldNameJson(field: StreamFieldDTO): String = {
+    val json = new JSONObject()
+    json.put("name", field.getStreamFieldName)
+    json.put("type", field.getFieldType)
+    json.put("nullable", true)
+    json.put("metadata", {})
+    json.toJSONString
   }
 
 }

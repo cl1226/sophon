@@ -5,6 +5,7 @@ import java.lang.reflect.{Method, Modifier}
 import java.sql
 
 import com.scistor.compute.interfacex.{ComputeOperator, SparkProcessProxy, SparkProcessProxy2}
+import com.scistor.compute.model.remote.{OperatorImplementMethod, TransStepDTO}
 import com.scistor.compute.model.spark._
 import com.scistor.compute.until.{ClassCreateUtils, CompileUtils, ConstantUtils}
 import com.scistor.compute.utils.UdfUtils
@@ -28,7 +29,7 @@ object ComputeProcess {
                               df: DataFrame,
                               defindmethod: UserDefineOperator,
                               operator: ComputeOperator,
-                              step: ComputeJob): DataFrame = {
+                              step: TransStepDTO): DataFrame = {
 
     val inputs = defindmethod.getInputMapping.asScala.map(_._1)
     val outputs = defindmethod.getOutputMapping.asScala.map(_._2.getFieldName)
@@ -194,7 +195,7 @@ object ComputeProcess {
   /**
    * process dynamic code.
    */
-  def processDynamicCode(session: SparkSession, df: DataFrame, invokeInfo: InvokeInfo, step: ComputeJob): DataFrame = {
+  def processDynamicCode(session: SparkSession, df: DataFrame, invokeInfo: InvokeInfo, step: TransStepDTO): DataFrame = {
     var res: DataFrame = df
     val schema = df.schema
     val alias = if (StringUtils.isNoneEmpty(invokeInfo.getAlias)) invokeInfo.getAlias else invokeInfo.getProcessField.get(0).getFieldName
@@ -202,8 +203,9 @@ object ComputeProcess {
     val tmpcol = "scistor_tmp"
     var returnDataType: AtomicType = null
     var method: Method = null
-    step.getOperatorType match {
-      case OperatorType.JAVA => {
+
+    OperatorImplementMethod.get(step.getStepType) match {
+      case OperatorImplementMethod.ScriptJava => {
 
         var columns = df.columns.map(df.col(_)).toBuffer
         if (invokeInfo.getCode != null && !"".equals(invokeInfo.getCode)) {
@@ -247,7 +249,7 @@ object ComputeProcess {
         res
       }
 
-      case OperatorType.SCALA => {
+      case OperatorImplementMethod.ScriptScala => {
         method = ClassCreateUtils.apply(invokeInfo.getCode).methods(invokeInfo.getMethodName)
         returnDataType = UdfUtils.convertSparkType(method.getReturnType.getName)
         val newschema = schema.add(tmpcol, returnDataType)
@@ -327,12 +329,15 @@ object ComputeProcess {
     res.withColumn(alias, res.col(field))
   }
 
-  def packageAttrByStep(step: ComputeJob): java.util.Map[java.lang.String, java.lang.String] = {
+  def packageAttrByStep(step: TransStepDTO): java.util.Map[java.lang.String, java.lang.String] = {
     val res = new java.util.HashMap[java.lang.String, java.lang.String]()
-    res.put(ComputeOperator.OPERATOR_TYPE, step.getOperatorType.toString)
-    res.put(ComputeOperator.STEP_NAME, step.getJobId)
+    res.put(ComputeOperator.OPERATOR_TYPE, step.getStepType)
+    res.put(ComputeOperator.STEP_NAME, step.getStepId)
 
-    res.putAll(step.getAttrs)
+    step.getStepAttributes.asScala.map(x => {
+      res.put(x._1, x._2.asInstanceOf[String])
+    })
+
     res
   }
 

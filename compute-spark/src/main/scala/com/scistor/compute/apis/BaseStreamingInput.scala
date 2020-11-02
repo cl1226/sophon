@@ -1,6 +1,6 @@
 package com.scistor.compute.apis
 
-import com.scistor.compute.model.spark.SourceAttribute
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import org.apache.spark.streaming.StreamingContext
@@ -9,14 +9,14 @@ import org.apache.spark.streaming.dstream.DStream
 abstract class BaseStreamingInput[T] extends Plugin {
 
   /**
-   * Set SourceAttribute.
+   * Set Config.
    * */
-  def setSource(source: SourceAttribute)
+  def setConfig(config: TransStepDTO)
 
   /**
-   * get SourceAttribute.
+   * get Config.
    * */
-  def getSource(): SourceAttribute
+  def getConfig(): TransStepDTO
 
   /**
    * This must be implemented to convert RDD[T] to Dataset[Row] for later processing

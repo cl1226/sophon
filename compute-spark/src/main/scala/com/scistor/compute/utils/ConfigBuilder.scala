@@ -4,7 +4,7 @@ import java.util.ServiceLoader
 
 import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput, BaseTransform, Plugin}
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.JavaConverters._
 import scala.util.control.Breaks.{break, breakable}
 
 class ConfigBuilder {
@@ -12,8 +12,9 @@ class ConfigBuilder {
   def createStaticInputs[T <: Plugin](engine: String): List[BaseStaticInput] = {
 
     var inputList = List[BaseStaticInput]()
-    JobInfoTransfer.staticInputs.foreach(input => {
-      val className = buildClassFullQualifier(input._2.sourceType.name(), "input", engine)
+
+    SparkInfoTransfer.staticInputs.foreach(input => {
+      val className = buildClassFullQualifier(input._2.getStepType, "input", engine)
 
       val obj = Class
         .forName(className)
@@ -23,7 +24,7 @@ class ConfigBuilder {
       obj match {
         case inputObject: BaseStaticInput => {
           val baseStaticInput = inputObject.asInstanceOf[BaseStaticInput]
-          baseStaticInput.setSource(input._2)
+          baseStaticInput.setConfig(input._2)
           inputList = inputList :+ baseStaticInput
         }
         case _ => // do nothing
@@ -36,9 +37,9 @@ class ConfigBuilder {
 
   def createStreamingInputs(engine: String): List[BaseStreamingInput[Any]] = {
 
-    var inputList = List[BaseStreamingInput[Any]]()
-    JobInfoTransfer.streamingInputs.foreach(input => {
-      val className = buildClassFullQualifier(s"${input._2.sourceType.name()}Stream", "input", engine)
+    var streamInputList = List[BaseStreamingInput[Any]]()
+    SparkInfoTransfer.streamingInputs.foreach(input => {
+      val className = buildClassFullQualifier(s"${input._2.getStepType}Stream", "input", engine)
 
       val obj = Class
         .forName(className)
@@ -47,21 +48,21 @@ class ConfigBuilder {
       obj match {
         case inputObject: BaseStreamingInput[Any] => {
           val baseStreamingInput = inputObject.asInstanceOf[BaseStreamingInput[Any]]
-          baseStreamingInput.setSource(input._2)
-          inputList = inputList :+ baseStreamingInput
+          baseStreamingInput.setConfig(input._2)
+          streamInputList = streamInputList :+ baseStreamingInput
         }
         case _ => // do nothing
       }
     })
 
-    inputList
+    streamInputList
   }
 
-  def createTransforms[T <: Plugin](engine: String): Map[String, BaseTransform] = {
+  def createTransforms[T <: Plugin](engine: String): List[BaseTransform] = {
 
-    var transformMap = Map[String, BaseTransform]()
-    JobInfoTransfer.transforms.foreach(transform => {
-      val className = buildClassFullQualifier(transform._2.getPluginName, "transform", engine)
+    var transformList = List[BaseTransform]()
+    SparkInfoTransfer.transforms.foreach(transform => {
+      val className = buildClassFullQualifier(transform._2.getStepType, "transform", engine)
 
       val obj = Class
         .forName(className)
@@ -71,26 +72,26 @@ class ConfigBuilder {
       obj match {
         case transformObject: BaseTransform => {
           val baseTransform: BaseTransform = transformObject.asInstanceOf[BaseTransform]
-          baseTransform.setAttribute(transform._2)
-          transformMap += (transform._1 -> baseTransform)
+          baseTransform.setConfig(transform._2)
+          transformList = transformList :+ baseTransform
         }
         case _ => // do nothing
       }
 
     })
 
-    transformMap
+    transformList
   }
 
   def createOutputs[T <: Plugin](engine: String): List[BaseOutput] = {
 
     var outputList = List[BaseOutput]()
-    JobInfoTransfer.outputs.foreach(output => {
+    SparkInfoTransfer.outputs.foreach(output => {
       val className = engine match {
         case "batch" | "sparkstreaming" =>
-          buildClassFullQualifier(output._2.sinkType.name(), "output", "batch")
+          buildClassFullQualifier(output._2.getStepType, "output", "batch")
         case "structuredstreaming" =>
-          buildClassFullQualifier(output._2.sinkType.name(), "output", engine)
+          buildClassFullQualifier(output._2.getStepType, "output", engine)
       }
 
       val obj = Class
@@ -101,7 +102,7 @@ class ConfigBuilder {
       obj match {
         case outputObject: BaseOutput => {
           val baseOutput: BaseOutput = outputObject.asInstanceOf[BaseOutput]
-          baseOutput.setSink(output._2)
+          baseOutput.setConfig(output._2)
           outputList = outputList :+ baseOutput
         }
         case _ => // do nothing
@@ -126,7 +127,12 @@ class ConfigBuilder {
 
   private def buildClassFullQualifier(name: String, classType: String, engine: String): String = {
 
-    var qualifier = name.substring(0, 1).concat(name.substring(1).toLowerCase()).replace("stream", "Stream")
+    var qualifier = name match {
+      case "java-package" | "spark-package" | "java-script" | "scala-script" | "sql-script" | "python-command" | "shell-command" => {
+        "userDefinedTransform"
+      }
+      case _ => name.substring(0, 1).toUpperCase().concat(name.substring(1).toLowerCase()).replace("stream", "Stream")
+    }
     if (qualifier.split("\\.").length == 1) {
 
       val packageName = classType match {

@@ -13,6 +13,26 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.wuxi.scistor.compute.web</groupId>
+            <artifactId>compute-web-common</artifactId>
+            <version>shanghai-1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.wuxi.scistor.baseservice</groupId>
+                    <artifactId>baseservice-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.wuxi.scistor.baseservice</groupId>
+                    <artifactId>baseservice-cms-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.scistor.compute</groupId>
+                    <artifactId>compute-common</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jsch</artifactId>
             <version>0.1.55</version>

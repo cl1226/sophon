@@ -1,30 +1,31 @@
 package com.scistor.compute.transform
 
 import com.scistor.compute.apis.BaseTransform
-import com.scistor.compute.model.spark.ComputeJob
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types.{BooleanType, DoubleType, FloatType, IntegerType, LongType, StringType}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 class Convert extends BaseTransform {
 
-  var attribute: ComputeJob = _
+  var config: TransStepDTO = _
 
   /**
-   * Set Attribute.
+   * Set Config.
    * */
-  override def setAttribute(attr: ComputeJob): Unit = {
-    this.attribute = attr
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get Attribute.
+   * Get Config.
    * */
-  override def getAttribute(): ComputeJob = attribute
+  override def getConfig(): TransStepDTO = config
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
-    val srcField = attribute.getAttrs.get("sourceField").mkString
-    val newType = attribute.getAttrs.get("newType").mkString
+    val attrs = config.getStepAttributes
+    val srcField = attrs.get("sourceField").toString
+    val newType = attrs.get("newType").toString
 
     newType match {
       case "string" => df.withColumn(srcField, col(srcField).cast(StringType))
@@ -41,9 +42,10 @@ class Convert extends BaseTransform {
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
   override def validate(): (Boolean, String) = {
-    if (!attribute.getAttrs.containsKey("sourceField")) {
+    val attrs = config.getStepAttributes
+    if (!attrs.containsKey("sourceField")) {
       (false, "please specify [sourceType] as a non-empty string")
-    } else if (!attribute.getAttrs.containsKey("newType")) {
+    } else if (!attrs.containsKey("newType")) {
       (false, "please specify [newType] as a non-empty string")
     } else {
       (true, "")

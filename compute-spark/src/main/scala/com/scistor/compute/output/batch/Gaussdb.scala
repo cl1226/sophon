@@ -3,36 +3,44 @@ package com.scistor.compute.output.batch
 import java.io.{InputStream, PipedInputStream, PipedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.sql.{Connection, DriverManager, SQLException}
+import java.util
+import java.util.Properties
 
 import com.huawei.gauss200.jdbc.copy.CopyManager
 import com.huawei.gauss200.jdbc.core.BaseConnection
 import com.scistor.compute.apis.BaseOutput
-import com.scistor.compute.model.spark.SinkAttribute
-import org.apache.spark.sql.{DataFrame, Row, functions}
+import com.scistor.compute.model.remote.TransStepDTO
+import org.apache.spark.sql.{DataFrame, Row}
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 class Gaussdb extends BaseOutput {
 
-  var sinkAttribute: SinkAttribute = _
+  var config: TransStepDTO = _
 
   /**
-   * Set SinkAttribute.
+   * Set Config.
    **/
-  override def setSink(sink: SinkAttribute): Unit = {
-    this.sinkAttribute = sink
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get SinkAttribute.
+   * Get Config.
    **/
-  override def getSink(): SinkAttribute = {
-    this.sinkAttribute
-  }
+  override def getConfig(): TransStepDTO = config
 
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
   override def validate(): (Boolean, String) = {
-    (true, "")
+    val attrs = config.getStepAttributes
+    if (!attrs.containsKey("connectUrl")) {
+      (false, s"please specify [connectUrl] in ${attrs.getOrElse("dataSourceType", "")} as a non-empty string")
+    } else {
+      (true, "")
+    }
   }
 
   def genPipedInputStream(arr: Array[Row]): InputStream = {
@@ -60,14 +68,22 @@ class Gaussdb extends BaseOutput {
     in
   }
 
-  def copyIn(data: Array[Row], sink: SinkAttribute, str: String): Long = {
+  def copyIn(data: Array[Row], str: String): Long = {
+    val attrs = config.getStepAttributes
     var conn: Connection = null
+    val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     try {
-      println(s"gaussdb url: ${sink.sink_connection_url}")
-      Class.forName("com.huawei.gauss200.jdbc.Driver")
-      conn = DriverManager.getConnection(sink.sink_connection_url, sink.sink_connection_username, sink.sink_connection_password)
+      println(s"gaussdb url: ${attrs.get("connectUrl").toString}")
+
+      val prop = new Properties
+      for ((k, v) <- definedProps) {
+        prop.setProperty(k, v.toString)
+      }
+      prop.setProperty("driver", "com.huawei.gauss200.jdbc.Driver")
+
+      conn = DriverManager.getConnection(attrs.get("connectUrl").toString, prop)
       val copyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
-      val tableName = sink.sinknamespace.split("\\.")(3)
+      val tableName = definedProps.get("tableName").toString
       val cmd = s"COPY $tableName ($str) from STDIN DELIMITER AS '&^&', null '', ignore_extra_data 'true', EOL '#^#', compatible_illegal_chars 'true'"
       println(s"copy cmd: $cmd")
       val count = copyManager.copyIn(cmd, genPipedInputStream(data))
@@ -84,18 +100,20 @@ class Gaussdb extends BaseOutput {
   }
 
   def process(df: DataFrame): Unit = {
-    val params = sinkAttribute.parameters
-    val saveType = params.getOrDefault("saveType", "jdbc")
+    val attrs = config.getStepAttributes
+    val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
+    val saveType = definedProps.getOrDefault("saveType", "jdbc")
 
     saveType match {
       case "jdbc" => {
-        val saveMode = params.getOrDefault("saveMode", "append")
+        val saveMode = definedProps.getOrDefault("saveMode", "append").toString
         val prop = new java.util.Properties
+        for ((k, v) <- definedProps) {
+          prop.setProperty(k, v.toString)
+        }
         prop.setProperty("driver", "com.huawei.gauss200.jdbc.Driver")
-        prop.setProperty("user", sinkAttribute.sink_connection_username)
-        prop.setProperty("password", sinkAttribute.sink_connection_password)
 
-        df.write.mode(saveMode).jdbc(sinkAttribute.sink_connection_url, sinkAttribute.tableName, prop)
+        df.write.mode(saveMode).jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, prop)
       }
       case "copy" => {
         println("copy into gaussdb...")
@@ -105,7 +123,7 @@ class Gaussdb extends BaseOutput {
         })
         val str = columns.toString().substring(0, columns.toString().length - 1)
         df.rdd.mapPartitions(x => {
-          copyIn(x.toArray, sinkAttribute, str)
+          copyIn(x.toArray, str)
           x
         }).count()
       }

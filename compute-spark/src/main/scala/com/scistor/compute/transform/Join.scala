@@ -1,30 +1,31 @@
 package com.scistor.compute.transform
 
 import com.scistor.compute.apis.BaseTransform
-import com.scistor.compute.model.spark.ComputeJob
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 class Join extends BaseTransform {
 
-  var attribute: ComputeJob = _
+  var config: TransStepDTO = _
 
   /**
-   * Set Attribute.
+   * Set Config.
    * */
-  override def setAttribute(attr: ComputeJob): Unit = {
-    this.attribute = attr
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get Attribute.
+   * Get Config.
    * */
-  override def getAttribute(): ComputeJob = attribute
+  override def getConfig(): TransStepDTO = config
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
-    val sourceTableName = attribute.getAttrs.get("sourceTableName").mkString
-    val targetTableName = attribute.getAttrs.get("targetTableName").mkString
-    val joinField: Seq[String] = attribute.getAttrs.get("joinField").mkString.split(",").toSeq
-    val joinType = attribute.getAttrs.getOrDefault("joinType", "inner").mkString
+    val attrs = config.getStepAttributes
+    val sourceTableName = attrs.get("sourceTableName").toString
+    val targetTableName = attrs.get("targetTableName").toString
+    val joinField: Seq[String] = attrs.get("joinField").toString.split(",").toSeq
+    val joinType = attrs.getOrDefault("joinType", "inner").toString
     val sourceDF = spark.read.table(sourceTableName)
     val targetDF = spark.read.table(targetTableName)
     val df = sourceDF.join(targetDF, joinField, joinType)
@@ -37,11 +38,12 @@ class Join extends BaseTransform {
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
   override def validate(): (Boolean, String) = {
-    if (!attribute.getAttrs.containsKey("sourceTableName")) {
+    val attrs = config.getStepAttributes
+    if (!attrs.containsKey("sourceTableName")) {
       (false, "please specify [sourceTableName] as a non-empty string")
-    } else if (!attribute.getAttrs.containsKey("targetTableName")) {
+    } else if (!attrs.containsKey("targetTableName")) {
       (false, "please specify [targetTableName] as a non-empty string")
-    } else if(!attribute.getAttrs.containsKey("joinField")) {
+    } else if(!attrs.containsKey("joinField")) {
       (false, "please specify [joinField] as a non-empty string")
     } else {
       (true, "")

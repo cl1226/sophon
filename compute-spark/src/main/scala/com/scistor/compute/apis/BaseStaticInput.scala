@@ -1,19 +1,19 @@
 package com.scistor.compute.apis
 
-import com.scistor.compute.model.spark.SourceAttribute
+import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 abstract class BaseStaticInput extends Plugin {
 
   /**
-   * Set SourceAttribute.
+   * Set Config.
    * */
-  def setSource(source: SourceAttribute)
+  def setConfig(config: TransStepDTO)
 
   /**
-   * get SourceAttribute.
+   * Get Config.
    * */
-  def getSource(): SourceAttribute
+  def getConfig(): TransStepDTO
 
 
   /**

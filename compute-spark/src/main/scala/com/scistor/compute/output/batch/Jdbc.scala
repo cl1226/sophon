@@ -1,28 +1,29 @@
 package com.scistor.compute.output.batch
 
+import java.util
+import java.util.Properties
+
 import com.scistor.compute.apis.BaseOutput
-import com.scistor.compute.model.spark.SinkAttribute
-import org.apache.spark.sql.{Dataset, Row, SaveMode}
+import com.scistor.compute.model.remote.TransStepDTO
+import org.apache.spark.sql.{Dataset, Row}
+
+import scala.collection.JavaConversions._
 
 class Jdbc extends BaseOutput {
 
-  var firstProcess = true
-
-  var sink: SinkAttribute = _
+  var config: TransStepDTO = _
 
   /**
-   * Set SinkAttribute.
+   * Set Config.
    **/
-  override def setSink(sink: SinkAttribute): Unit = {
-    this.sink = sink
+  override def setConfig(config: TransStepDTO): Unit = {
+    this.config = config
   }
 
   /**
-   * get SinkAttribute.
+   * Get Config.
    **/
-  override def getSink(): SinkAttribute = {
-    this.sink
-  }
+  override def getConfig(): TransStepDTO = config
 
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
@@ -32,21 +33,17 @@ class Jdbc extends BaseOutput {
   }
 
   override def process(df: Dataset[Row]): Unit = {
-    val prop = new java.util.Properties
-    prop.setProperty("driver", "com.mysql.jdbc.Driver")
-    prop.setProperty("user", sink.sink_connection_username)
-    prop.setProperty("password", sink.sink_connection_password)
-
-    val saveMode = "append"
-
-    if (firstProcess) {
-      df.write.mode(saveMode).jdbc(sink.sink_connection_url, sink.tableName, prop)
-      firstProcess = false
-    } else if (saveMode == "overwrite") {
-      // actually user only want the first time overwrite in streaming(generating multiple dataframe)
-      df.write.mode(SaveMode.Append).jdbc(sink.sink_connection_url, sink.tableName, prop)
-    } else {
-      df.write.mode(saveMode).jdbc(sink.sink_connection_url, sink.tableName, prop)
+    val attrs = config.getStepAttributes
+    val prop = new Properties()
+    val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
+    for ((k, v) <- definedProps) {
+      prop.setProperty(k, v.toString)
     }
+    prop.setProperty("driver", "com.mysql.cj.jdbc.Driver")
+
+    val saveMode = definedProps.getOrElse("saveMode", "append").toString
+
+    df.write.mode(saveMode).jdbc(attrs.get("connectUrl").toString, attrs.get("tableName").toString, prop)
+
   }
 }
