@@ -314,7 +314,7 @@ object SparkJobStarter extends Logging {
       }
 
       config.getInputFields.foreach(out => {
-        if (ds.columns.contains(out.getFieldName)) {
+        if (ds.columns.contains(out.getStreamFieldName)) {
           if (!out.getConstant) ds = ds.withColumn(out.getFieldName, ds.col(out.getStreamFieldName))
           else ds = ds.withColumn(out.getFieldName, new Column(out.getConstantValue))
         }

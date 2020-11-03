@@ -2,6 +2,7 @@ package com.scistor.compute.input.batch
 
 import com.scistor.compute.apis.BaseStaticInput
 import com.scistor.compute.model.remote.TransStepDTO
+import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 class File extends BaseStaticInput {
@@ -69,7 +70,13 @@ class File extends BaseStaticInput {
       case "parquet" => reader.parquet(path)
       case "json" => reader.option("mode", "PERMISSIVE").json(path)
       case "orc" => reader.orc(path)
-      case "csv" => reader.csv(path)
+      case "csv" => {
+        var delimiter: String = ","
+        if(attrs.containsKey("delimiter") && StringUtils.isNotBlank(attrs.get("delimiter").toString)) {
+          delimiter = attrs.get("delimiter").toString
+        }
+        reader.option("header", "true").option("delimiter", delimiter).csv(path)
+      }
       case _ => reader.format(format).load(path)
     }
   }
