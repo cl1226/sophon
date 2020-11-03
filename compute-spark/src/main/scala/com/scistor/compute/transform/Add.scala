@@ -28,7 +28,10 @@ class Add extends BaseTransform {
   override def getConfig(): TransStepDTO = config
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
-    import spark.implicits._
+    val attrs = config.getStepAttributes
+    attrs.asScala.foreach(attr => {
+      df.withColumn(attr._1, lit(attr._2))
+    })
 
 //    config.getStepAttributes
 //    attribute.getAttrs.asScala.foreach(attr => {

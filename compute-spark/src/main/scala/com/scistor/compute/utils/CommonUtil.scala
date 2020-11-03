@@ -33,7 +33,7 @@ object CommonUtil {
   def portalField2ComputeField(portalFields: util.List[StreamFieldDTO]): util.List[ComputeField] = {
     var computeFields = new util.ArrayList[ComputeField]()
     for (f <- portalFields.asScala) {
-      val field = new ComputeField(f.getFieldName, DataType.valueOf(f.getFieldType), true)
+      val field = new ComputeField(f.getFieldName, DataType.valueOf(f.getFieldType.toUpperCase()), true)
       field.setConstant(f.getConstant)
       field.setConstantValue(f.getConstantValue)
       field.setStructFieldJson(buildStreamFieldNameJson(f))

@@ -1,12 +1,11 @@
 package com.scistor.compute.transform
 
-import com.scistor.compute.SparkJobStarter.viewTableMap
 import com.scistor.compute.apis.BaseTransform
 import com.scistor.compute.interfacex.{ComputeOperator, SparkProcessProxy}
-import com.scistor.compute.model.remote.{OperatorImplementMethod, StreamFieldDTO, TransStepDTO}
+import com.scistor.compute.model.remote.{OperatorImplementMethod, TransStepDTO}
 import com.scistor.compute.model.spark.{InvokeInfo, UserDefineOperator}
 import com.scistor.compute.until.ClassUtils
-import com.scistor.compute.utils.{CommonUtil, SparkInfoTransfer}
+import com.scistor.compute.utils.CommonUtil
 import org.apache.spark.sql.ComputeProcess.{computeOperatorProcess, computeSparkProcess, pipeLineProcess, processDynamicCode}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
@@ -35,7 +34,6 @@ class UserDefinedTransform extends BaseTransform {
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     var frame = df
-    frame.createOrReplaceTempView(config.getName)
 
     // execute java/spark jar
     val attrs = config.getStepAttributes
@@ -71,21 +69,12 @@ class UserDefinedTransform extends BaseTransform {
           case OperatorImplementMethod.CommandShell => {
             frame = pipeLineProcess(spark, frame, "sh", Array[String](), "")
           }
+          case _ => frame = frame
         }
-
       }
     }
 
-    registerTempView(config.getName, frame)
-
-    CommonUtil.writeSimpleData(frame, s"${SparkInfoTransfer.jobName} - ${config.getName}")
-
-    df
-  }
-
-  private[scistor] def registerTempView(tableName: String, ds: Dataset[Row]): Unit = {
-    ds.createOrReplaceTempView(tableName)
-    viewTableMap += (tableName -> ds)
+    frame
   }
 
 }

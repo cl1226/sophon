@@ -29,7 +29,7 @@ class Mysql extends Jdbc {
     partColumnName match {
       case "" => (prop, new Array[String](0))
       case _ => {
-        val numPartitions: Int = definedProps.getOrElse("numPartitions", "1").asInstanceOf[Int]
+        val numPartitions: Int = Integer.valueOf(definedProps.getOrElse("numPartitions", "1").toString)
 
         var precision = 0
         val totalLen = 1

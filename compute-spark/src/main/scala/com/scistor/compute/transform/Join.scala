@@ -29,8 +29,6 @@ class Join extends BaseTransform {
     val sourceDF = spark.read.table(sourceTableName)
     val targetDF = spark.read.table(targetTableName)
     val df = sourceDF.join(targetDF, joinField, joinType)
-    println("[INFO] join result: ")
-    df.show()
     df
   }
 

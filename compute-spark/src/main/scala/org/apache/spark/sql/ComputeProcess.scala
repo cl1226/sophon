@@ -198,7 +198,7 @@ object ComputeProcess {
   def processDynamicCode(session: SparkSession, df: DataFrame, invokeInfo: InvokeInfo, step: TransStepDTO): DataFrame = {
     var res: DataFrame = df
     val schema = df.schema
-    val alias = if (StringUtils.isNoneEmpty(invokeInfo.getAlias)) invokeInfo.getAlias else invokeInfo.getProcessField.get(0).getFieldName
+    val alias = step.getOutputFields.get(0).getFieldName
 
     val tmpcol = "scistor_tmp"
     var returnDataType: AtomicType = null
@@ -211,14 +211,18 @@ object ComputeProcess {
         if (invokeInfo.getCode != null && !"".equals(invokeInfo.getCode)) {
 
           val args: Seq[Expression] = {
-            val objects = invokeInfo.getProcessField.map(filed => {
-              if (filed.isConstant) functions.lit(filed.getConstantValue).expr else functions.col(filed.getFieldName).expr
+            val objects = step.getInputFields.map(f => {
+              if (f.getConstant) {
+                functions.lit(f.getConstantValue).expr
+              } else {
+                functions.col(f.getStreamFieldName).expr
+              }
             })
             objects
           }
           // 单参数返回
-          columns = columns.filter(i => !i.named.name.equals(invokeInfo.getAlias))
-          columns += ssfunctions.codeInvoke(invokeInfo.getCode, invokeInfo.getMethodName, args: _*).as(invokeInfo.getAlias)
+          columns = columns.filter(i => !i.named.name.equals(alias))
+          columns += ssfunctions.codeInvoke(invokeInfo.getCode, invokeInfo.getMethodName, args: _*).as(alias)
 
           // 多参数返回
 //          columns = columns.filter(m => {

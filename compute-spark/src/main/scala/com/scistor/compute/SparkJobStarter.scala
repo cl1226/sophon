@@ -315,17 +315,23 @@ object SparkJobStarter extends Logging {
 
       config.getInputFields.foreach(out => {
         if (ds.columns.contains(out.getFieldName)) {
-          if (!out.getConstant) ds = ds.withColumn(out.getStreamFieldName, ds.col(out.getFieldName))
+          if (!out.getConstant) ds = ds.withColumn(out.getFieldName, ds.col(out.getStreamFieldName))
           else ds = ds.withColumn(out.getFieldName, new Column(out.getConstantValue))
         }
       })
+      // 移除不输出的列
+      val allCols = ds.schema.map(_.name)
+      val needCols = config.getInputFields.map(_.getFieldName)
+      allCols.foreach { col =>
+        if (!needCols.contains(col)) ds = ds.drop(col)
+      }
 
       println("[INFO] output dataframe: ")
       ds.show(5)
 
-      if (ds.take(1).size > 0) {
-        writeSimpleData(ds, s"${SparkInfoTransfer.jobName} - ${config.getName}")
-      }
+//      if (ds.take(1).size > 0) {
+//        writeSimpleData(ds, s"${SparkInfoTransfer.jobName} - ${config.getName}")
+//      }
 
       // 写入mysql，统计输出
       new JdbcUtil(sparkSession, SparkInfoTransfer.jobInfo.getMysqlConfig).writeDataCount(ds.count().toString, "0", jobName)
