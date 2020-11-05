@@ -52,6 +52,13 @@ class Jdbc extends BaseStaticInput {
 
   def jdbcReader(sparkSession: SparkSession, driver: String): Dataset[Row] = {
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     var dataframe: Dataset[Row] = null
     val tuple = initProp(driver)
     if (tuple._2 != null && tuple._2.length > 0) {

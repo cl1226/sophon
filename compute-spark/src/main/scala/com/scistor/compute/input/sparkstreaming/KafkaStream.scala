@@ -60,7 +60,7 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
       props.setProperty("sasl.kerberos.service.name", "kafka")
     }
 
-    println("[INFO] Kafka Input properties: ")
+    println("[INFO] 输入数据源 <kafka> properties: ")
     props.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

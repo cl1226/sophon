@@ -15,11 +15,11 @@ public class AsciiArt {
         final int height = 32;
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics g = image.getGraphics();
-        g.setFont(new Font("Dialog", Font.PLAIN, 24));
+        g.setFont(new Font("Dialog", Font.PLAIN, 16));
         Graphics2D graphics = (Graphics2D) g;
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        graphics.drawString("Scistor", 6, 24);
+        graphics.drawString(str, 6, 24);
 
         for (int y = 0; y < height; y++) {
             StringBuilder sb = new StringBuilder();

@@ -1,5 +1,7 @@
 package com.scistor.compute.transform
 
+import java.util
+
 import com.scistor.compute.apis.BaseTransform
 import com.scistor.compute.interfacex.{ComputeOperator, SparkProcessProxy}
 import com.scistor.compute.model.remote.{OperatorImplementMethod, TransStepDTO}
@@ -8,6 +10,9 @@ import com.scistor.compute.until.ClassUtils
 import com.scistor.compute.utils.CommonUtil
 import org.apache.spark.sql.ComputeProcess.{computeOperatorProcess, computeSparkProcess, pipeLineProcess, processDynamicCode}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
+
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class UserDefinedTransform extends BaseTransform {
 
@@ -35,6 +40,12 @@ class UserDefinedTransform extends BaseTransform {
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     var frame = df
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 自定义算子 <${config.getStepType}> input properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
 
     OperatorImplementMethod.get(config.getStepType) match {
       // execute java/spark jar
@@ -67,13 +78,19 @@ class UserDefinedTransform extends BaseTransform {
         val codeBlock = attrs.get("codeBlock").toString
         frame = spark.sql(codeBlock)
       }
-      // execute python
-      case OperatorImplementMethod.CommandPython => {
-        frame = pipeLineProcess(spark, frame, "python", Array[String](), "")
-      }
-      // execute shell
-      case OperatorImplementMethod.CommandShell => {
-        frame = pipeLineProcess(spark, frame, "sh", Array[String](), "")
+      // execute python/shell
+      case OperatorImplementMethod.CommandPython | OperatorImplementMethod.CommandShell => {
+        val path = attrs.get("codeFileUrl").toString
+        val fileName = path.substring(path.lastIndexOf("/") + 1, path.length)
+        val commands = new util.ArrayList[String]()
+        if(fileName.endsWith("py")) commands.add("python") else if(fileName.endsWith("sh")) commands.add("sh")
+        commands.add(fileName)
+
+        var index: Int = 0
+        config.getInputFields.asScala.foreach(input => {
+          frame = pipeLineProcess(spark, frame, input.getStreamFieldName, commands.toArray[String](Array[String]()), config.getOutputFields.get(index).getStreamFieldName)
+          index = index + 1
+        })
       }
       case _ => frame = df
     }
