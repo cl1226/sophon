@@ -34,44 +34,48 @@ class UserDefinedTransform extends BaseTransform {
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     var frame = df
-
-    // execute java/spark jar
     val attrs = config.getStepAttributes
-    spark.sparkContext.addJar(attrs.get("jarUrl").toString)
-    val userDefineOperator = new UserDefineOperator()
-    userDefineOperator.setJarPath(attrs.get("jarUrl").toString)
-    val operator = ClassUtils.getUserOperatorImpl(userDefineOperator)
 
-    operator match {
-      // process user define java jar(map function)
-      case operator: ComputeOperator => frame = computeOperatorProcess(spark, df, userDefineOperator, operator, config)
-      // process user define spark jar(single dataset)
-      case dfProcess: SparkProcessProxy => frame = computeSparkProcess(spark, df, userDefineOperator, dfProcess)
-      // other
-      case _ => throw new RuntimeException(s"Unsupported define operator: [${userDefineOperator.getClassFullName}], please check it!")
-    }
+    OperatorImplementMethod.get(config.getStepType) match {
+      // execute java/spark jar
+      case OperatorImplementMethod.PackageJava | OperatorImplementMethod.PackageSpark => {
+        val userDefineOperator = new UserDefineOperator()
+        val operator = ClassUtils.getUserOperatorImpl(userDefineOperator)
+        if (attrs.containsKey("jarUrl")) {
+          spark.sparkContext.addJar(attrs.get("jarUrl").toString)
+          userDefineOperator.setJarPath(attrs.get("jarUrl").toString)
+        }
 
-    // execute java/scala code, sql, python/shell
-    val codeBlock = attrs.get("codeBlock").toString
-    codeBlock match {
-      case "" =>
-      case _ => {
-        OperatorImplementMethod.get(config.getStepType) match {
-          case OperatorImplementMethod.ScriptJava | OperatorImplementMethod.ScriptJava => {
-            val invokeInfo = new InvokeInfo("", attrs.get("methodName").toString, CommonUtil.portalField2ComputeField(config.getOutputFields))
-            invokeInfo.setCode(attrs.get("codeBlock").toString)
-            frame = processDynamicCode(spark, frame, invokeInfo, config)
-          }
-          case OperatorImplementMethod.ScriptSql => frame = spark.sql(codeBlock)
-          case OperatorImplementMethod.CommandPython => {
-            frame = pipeLineProcess(spark, frame, "python", Array[String](), "")
-          }
-          case OperatorImplementMethod.CommandShell => {
-            frame = pipeLineProcess(spark, frame, "sh", Array[String](), "")
-          }
-          case _ => frame = frame
+        operator match {
+          // process user define java jar(map function)
+          case operator: ComputeOperator => frame = computeOperatorProcess(spark, df, userDefineOperator, operator, config)
+          // process user define spark jar(single dataset)
+          case dfProcess: SparkProcessProxy => frame = computeSparkProcess(spark, df, userDefineOperator, dfProcess)
+          // other
+          case _ => throw new RuntimeException(s"Unsupported define operator: [${userDefineOperator.getClassFullName}], please check it!")
         }
       }
+      // execute java/scala code
+      case OperatorImplementMethod.ScriptJava | OperatorImplementMethod.ScriptJava => {
+        val codeBlock = attrs.get("codeBlock").toString
+        val invokeInfo = new InvokeInfo("", attrs.get("methodName").toString, CommonUtil.portalField2ComputeField(config.getOutputFields))
+        invokeInfo.setCode(codeBlock)
+        frame = processDynamicCode(spark, frame, invokeInfo, config)
+      }
+      // execute sql
+      case OperatorImplementMethod.ScriptSql => {
+        val codeBlock = attrs.get("codeBlock").toString
+        frame = spark.sql(codeBlock)
+      }
+      // execute python
+      case OperatorImplementMethod.CommandPython => {
+        frame = pipeLineProcess(spark, frame, "python", Array[String](), "")
+      }
+      // execute shell
+      case OperatorImplementMethod.CommandShell => {
+        frame = pipeLineProcess(spark, frame, "sh", Array[String](), "")
+      }
+      case _ => frame = df
     }
 
     frame

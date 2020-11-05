@@ -10,7 +10,7 @@ import org.apache.spark.sql.types.{DateType, LongType, StringType, StructField, 
 
 class JdbcUtil(sparkSession: SparkSession, connectConfig: ConnectConfig) extends Serializable {
 
-  final val INPITTAB = "t_output_analysis"
+  final val INPITTAB = "t_compute_trans_task_amount"
 
   final val AGGTAB = "t_output_agg"
 
@@ -24,11 +24,10 @@ class JdbcUtil(sparkSession: SparkSession, connectConfig: ConnectConfig) extends
     if(!output.equals("0") || !input.equals("0")){
       val schema = StructType(
         List(
-          StructField("output", LongType, true),
+          StructField("yarnid", StringType, true),
           StructField("input", LongType, true),
-          StructField("time", StringType, true),
-          StructField("taskname", StringType, true),
-          StructField("jobuser", StringType, true)
+          StructField("output", LongType, true),
+          StructField("time", StringType, true)
         )
       )
 
@@ -36,11 +35,10 @@ class JdbcUtil(sparkSession: SparkSession, connectConfig: ConnectConfig) extends
       val rows = new util.ArrayList[Row]()
       rows.add(
         Row(
-          output.toLong,
-          input.toLong,
-          format.format(Calendar.getInstance().getTime),
           taskname,
-          taskname.substring(0, if (taskname.lastIndexOf("_") >= 0) taskname.lastIndexOf("_") else taskname.length)
+          input.toLong,
+          output.toLong,
+          format.format(Calendar.getInstance().getTime)
         )
       )
 
