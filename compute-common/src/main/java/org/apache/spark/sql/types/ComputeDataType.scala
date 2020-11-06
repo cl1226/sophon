@@ -10,14 +10,15 @@ object ComputeDataType extends Serializable {
   def fromStructField(fieldType: String) = {
     fieldType match {
       case "string" => DataTypes.StringType
+      case "int" => DataTypes.IntegerType
       case "integer" => DataTypes.IntegerType
       case "double" => DataTypes.DoubleType
       case "float" => DataTypes.FloatType
       case "long" => DataTypes.LongType
       case "boolean" => DataTypes.BooleanType
-      case "" => DataTypes.DateType
-      case "" => DataTypes.TimestampType
-      case "" => DataTypes.BinaryType
+      case "date" => DataTypes.DateType
+      case "timestamp" => DataTypes.TimestampType
+      case "binary" => DataTypes.BinaryType
     }
   }
 

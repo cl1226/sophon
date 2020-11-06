@@ -3,9 +3,13 @@ package com.scistor.compute.input.batch
 import com.scistor.compute.apis.BaseStaticInput
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.commons.lang3.StringUtils
+import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.types.ComputeDataType
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import scalaj.http
 import scalaj.http.Http
+
+import scala.collection.JavaConversions._
 
 class Fileinput extends BaseStaticInput {
 
@@ -30,6 +34,13 @@ class Fileinput extends BaseStaticInput {
     import spark.implicits._
 
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val response: http.HttpResponse[String] = Http(attrs.get("fileUrl").toString).header("Accept", "application/json").timeout(10000, 1000).asString
     val result = response.body
 
@@ -37,10 +48,21 @@ class Fileinput extends BaseStaticInput {
     val reader = spark.read.format(format)
 
     format match {
-      case "text" => spark.createDataset(Seq(result)).toDF()
+      case "txt" => {
+        val dataType = ComputeDataType.fromStructField(config.getOutputFields.get(0).getFieldType.toLowerCase())
+        val streamFieldName = config.getOutputFields.get(0).getStreamFieldName
+        var df = spark.createDataset(result.split("\n").toSeq).toDF(streamFieldName)
+        df = df.withColumn(streamFieldName, col(streamFieldName).cast(dataType))
+        df
+      }
       case "json" => {
-        val ds = spark.createDataset(Seq(result))
-        reader.option("mode", "PERMISSIVE").json(ds)
+        val ds = spark.createDataset(result.split("\n").toSeq)
+        var df = reader.option("mode", "PERMISSIVE").json(ds)
+        config.getOutputFields.foreach(output => {
+          val dataType = ComputeDataType.fromStructField(output.getFieldType.toLowerCase())
+          df = df.withColumn(output.getStreamFieldName, col(output.getStreamFieldName).cast(dataType))
+        })
+        df
       }
       case "csv" => {
         val ds = spark.createDataset(result.split("\r\n"))
@@ -50,7 +72,7 @@ class Fileinput extends BaseStaticInput {
         }
         reader.option("header", "true").option("delimiter", delimiter).csv(ds)
       }
-      case _ => spark.createDataset(Seq(result)).toDF()
+      case _ => spark.createDataset(result.split("\n").toSeq).toDF()
     }
   }
 

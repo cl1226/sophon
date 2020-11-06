@@ -10,6 +10,7 @@ import com.scistor.compute.until.{ClassCreateUtils, ConstantUtils}
 import com.scistor.compute.utils.UdfUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.catalyst.expressions.{Expression, GenericRowWithSchema}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{AtomicType, ComputeDataType, DataTypes, StructField, StructType, ssfunctions}
 
 import scala.collection.JavaConversions._
@@ -67,19 +68,17 @@ object ComputeProcess {
       val resultProcess = operator.process(map.asJava, packageAttrByStep(step)).map(data => {
         var field: ComputeField = null
         var outKey: StreamFieldDTO = null
-        if(outFieldMap.containsKey(data._1)) {
-          field = new ComputeField(data._1, DataType.valueOf(outFieldMap.get(data._1).get.getFieldType.toUpperCase()), true)
-          outKey = outFieldMap.get(data._1).get
-        } else {
-          field = new ComputeField(data._1, DataType.valueOf(inFieldMap.get(data._1).get.getFieldType.toUpperCase()), true)
-          outKey = inFieldMap.get(data._1).get
+        println(s"data._1: ${data._1}")
+        if(outStreamFieldMap.containsKey(data._1)) {
+          field = new ComputeField(data._1, DataType.valueOf(outStreamFieldMap.get(data._1).get.getFieldType.toUpperCase()), true)
+          outKey = outStreamFieldMap.get(data._1).get
         }
 
         if (outKey != null && outKey.getConstant == false) {
-          (outKey.getStreamFieldName, data._2)
+          (outKey.getFieldName, data._2)
         } else if (outKey != null && outKey.getConstant == true) {
           val structField = StructField(field.getFieldName, ComputeDataType.fromStructField(field.getDataType.name()))
-          (outKey.getStreamFieldName, ConstantUtils.castConstant(structField, outKey.getConstantValue))
+          (outKey.getFieldName, ConstantUtils.castConstant(structField, outKey.getConstantValue))
         } else {
           data
         }
@@ -105,7 +104,11 @@ object ComputeProcess {
     var res = df
     step.getInputFields.foreach(f => {
       f.getConstant.booleanValue() match {
-        case false => res = res.withColumnRenamed(f.getStreamFieldName, f.getFieldName)
+        case false => {
+          if (!f.getFieldName.equals(f.getStreamFieldName)) {
+            res = res.withColumn(f.getFieldName, col(s"${f.getStreamFieldName}"))
+          }
+        }
         case true => {
           val structField = StructField(f.getFieldName, ComputeDataType.fromStructField(f.getFieldType))
           res = res.withColumn(f.getFieldName, functions.lit(ConstantUtils.castConstant(structField, f.getConstantValue)))
@@ -116,7 +119,11 @@ object ComputeProcess {
 
     step.getOutputFields.foreach(f => {
       f.getConstant.booleanValue() match {
-        case false => res = res.withColumnRenamed(f.getStreamFieldName, f.getFieldName)
+        case false => {
+          if (!f.getFieldName.equals(f.getStreamFieldName)) {
+            res = res.withColumn(f.getFieldName, col(s"${f.getStreamFieldName}"))
+          }
+        }
         case true => {
           val structField = StructField(f.getFieldName, ComputeDataType.fromStructField(f.getFieldType))
           res = res.withColumn(f.getFieldName, functions.lit(ConstantUtils.castConstant(structField, f.getConstantValue)))
