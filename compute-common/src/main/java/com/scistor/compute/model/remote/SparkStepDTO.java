@@ -1,11 +1,12 @@
 package com.scistor.compute.model.remote;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * @author kaneshiro.J 2020/10/30
  */
-public class SparkStepDTO {
+public class SparkStepDTO implements Serializable {
 
     private List<String> stepFrom;
 

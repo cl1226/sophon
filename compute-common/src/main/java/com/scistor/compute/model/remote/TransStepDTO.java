@@ -1,12 +1,13 @@
 package com.scistor.compute.model.remote;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 /**
  * @author kaneshiro.J 2020/9/3
  */
-public class TransStepDTO {
+public class TransStepDTO implements Serializable {
 
     /**
      * 子拖入画布生成的唯一标识uuid（画布上的）

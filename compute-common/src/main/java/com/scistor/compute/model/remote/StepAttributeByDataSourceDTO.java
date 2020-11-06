@@ -1,12 +1,13 @@
 package com.scistor.compute.model.remote;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 /**
  * @author kaneshiro.J 2020/9/29
  */
-public class StepAttributeByDataSourceDTO {
+public class StepAttributeByDataSourceDTO implements Serializable {
 
     private String id;
 

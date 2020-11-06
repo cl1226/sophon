@@ -1,9 +1,11 @@
 package com.scistor.compute.model.remote;
 
+import java.io.Serializable;
+
 /**
  * @author kaneshiro.J 2020/9/29
  */
-public class StreamFieldDTO {
+public class StreamFieldDTO implements Serializable {
 
     private String fieldName;
 

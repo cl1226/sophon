@@ -8,7 +8,7 @@ import com.scistor.compute.model.remote.{OperatorImplementMethod, TransStepDTO}
 import com.scistor.compute.model.spark.{InvokeInfo, UserDefineOperator}
 import com.scistor.compute.until.ClassUtils
 import com.scistor.compute.utils.CommonUtil
-import org.apache.spark.sql.ComputeProcess.{computeOperatorProcess, computeSparkProcess, pipeLineProcess, processDynamicCode}
+import org.apache.spark.sql.ComputeProcess.{executeJavaProcess, executeSparkProcess, pipeLineProcess, processDynamicCode}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 import scala.collection.JavaConversions._
@@ -51,6 +51,8 @@ class UserDefinedTransform extends BaseTransform {
       // execute java/spark jar
       case OperatorImplementMethod.PackageJava | OperatorImplementMethod.PackageSpark => {
         val userDefineOperator = new UserDefineOperator()
+        userDefineOperator.setClassFullName(attrs.get("packageName").toString)
+        userDefineOperator.setMethodName(attrs.get("methodName").toString)
         val operator = ClassUtils.getUserOperatorImpl(userDefineOperator)
         if (attrs.containsKey("jarUrl")) {
           spark.sparkContext.addJar(attrs.get("jarUrl").toString)
@@ -59,9 +61,9 @@ class UserDefinedTransform extends BaseTransform {
 
         operator match {
           // process user define java jar(map function)
-          case operator: ComputeOperator => frame = computeOperatorProcess(spark, df, userDefineOperator, operator, config)
+          case operator: ComputeOperator => frame = executeJavaProcess(spark, df, operator, config)
           // process user define spark jar(single dataset)
-          case dfProcess: SparkProcessProxy => frame = computeSparkProcess(spark, df, userDefineOperator, dfProcess)
+          case dfProcess: SparkProcessProxy => frame = executeSparkProcess(spark, df, dfProcess, config)
           // other
           case _ => throw new RuntimeException(s"Unsupported define operator: [${userDefineOperator.getClassFullName}], please check it!")
         }

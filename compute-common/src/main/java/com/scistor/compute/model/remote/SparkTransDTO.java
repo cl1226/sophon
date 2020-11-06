@@ -1,11 +1,12 @@
 package com.scistor.compute.model.remote;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * @author kaneshiro.J 2020/10/30
  */
-public class SparkTransDTO {
+public class SparkTransDTO implements Serializable {
 
     private String transName;
 

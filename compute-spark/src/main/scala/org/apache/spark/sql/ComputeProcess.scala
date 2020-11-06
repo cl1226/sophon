@@ -2,16 +2,15 @@ package org.apache.spark.sql
 
 import java.io.{BufferedWriter, OutputStreamWriter, PrintWriter}
 import java.lang.reflect.{Method, Modifier}
-import java.sql
 
-import com.scistor.compute.interfacex.{ComputeOperator, SparkProcessProxy, SparkProcessProxy2}
-import com.scistor.compute.model.remote.{OperatorImplementMethod, TransStepDTO}
+import com.scistor.compute.interfacex.{ComputeOperator, SparkProcessProxy}
+import com.scistor.compute.model.remote.{OperatorImplementMethod, StreamFieldDTO, TransStepDTO}
 import com.scistor.compute.model.spark._
-import com.scistor.compute.until.{ClassCreateUtils, CompileUtils, ConstantUtils}
+import com.scistor.compute.until.{ClassCreateUtils, ConstantUtils}
 import com.scistor.compute.utils.UdfUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.catalyst.expressions.{Expression, GenericRowWithSchema}
-import org.apache.spark.sql.types.{AtomicType, ComputeDataType, DataTypes, StructType, ssfunctions}
+import org.apache.spark.sql.types.{AtomicType, ComputeDataType, DataTypes, StructField, StructType, ssfunctions}
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
@@ -21,122 +20,107 @@ import scala.io.Source
 
 object ComputeProcess {
 
-  /**
-   * Process java jar.
-   **/
-  def computeOperatorProcess(
-                              session: SparkSession,
-                              df: DataFrame,
-                              defindmethod: UserDefineOperator,
-                              operator: ComputeOperator,
-                              step: TransStepDTO): DataFrame = {
+  def executeJavaProcess(spark: SparkSession,
+                         df: DataFrame,
+                         operator: ComputeOperator,
+                         step: TransStepDTO): DataFrame = {
+    val oldSchema = df.schema
 
-    val inputs = defindmethod.getInputMapping.asScala.map(_._1)
-    val outputs = defindmethod.getOutputMapping.asScala.map(_._2.getFieldName)
-
-    var outSchme = new StructType()
-    //df.schema
-    val oldSchme = df.schema
-    println(s"execute java jar: ")
-    defindmethod.getOutputMapping.asScala.foreach(out => {
-      val structField2 = ComputeDataType.fromStructFieldJson(out._2.getStructFieldJson)
-      outSchme = outSchme.add(out._2.getFieldName, structField2.dataType, out._2.isNullable)
+    val inputs = step.getInputFields.asScala.map(_.getStreamFieldName)
+    val inFieldMap: mutable.Map[String, StreamFieldDTO] = new mutable.HashMap[String, StreamFieldDTO]()
+    val inStreamFieldMap: mutable.Map[String, StreamFieldDTO] = new mutable.HashMap[String, StreamFieldDTO]()
+    step.getInputFields.asScala.map(f => {
+      inFieldMap += (f.getFieldName -> f)
+      inStreamFieldMap += (f.getStreamFieldName -> f)
     })
 
+    val outputs = step.getOutputFields.asScala.map(_.getStreamFieldName)
+    val outFieldMap: mutable.Map[String, StreamFieldDTO] = new mutable.HashMap[String, StreamFieldDTO]()
+    val outStreamFieldMap: mutable.Map[String, StreamFieldDTO] = new mutable.HashMap[String, StreamFieldDTO]()
+    step.getOutputFields.asScala.map(f => {
+      outFieldMap += (f.getFieldName -> f)
+      outStreamFieldMap += (f.getStreamFieldName -> f)
+    })
+
+    var outSchema = new StructType()
+    step.getOutputFields.asScala.foreach(out => {
+      outSchema = outSchema.add(out.getFieldName, ComputeDataType.fromStructField(out.getFieldType), true)
+    })
     df.schema.foreach(field => {
-      if (!outSchme.exists(_.name.equals(field.name))) outSchme = outSchme.add(field)
+      if (!outSchema.exists(_.name.equals(field.name))) outSchema = outSchema.add(field)
     })
-
     val rddRow = df.rdd.map[Row](row => {
-      //get Table exits data and rename
       val rowdata = row.getValuesMap(inputs.toArray[String]).map(data => {
-        val field = new ComputeField(data._1, DataType.STRING, true)
-        val mapField = defindmethod.getInputMapping.get(field.getFieldName)
+        val field = new ComputeField(data._1, DataType.valueOf(inStreamFieldMap.get(data._1).get.getFieldType.toUpperCase()), true)
 
-        defindmethod.getInputMapping.get(field.getFieldName).isConstant match {
-          case false => {
-            (mapField.getFieldName, data._2)
+        val mapField = inStreamFieldMap.get(data._1).get
+        mapField.getConstant.booleanValue() match {
+          case false => (mapField.getFieldName, data._2)
+          case true => {
+            val structField = StructField(mapField.getFieldName, ComputeDataType.fromStructField(field.getDataType.name()))
+            (mapField.getFieldName, ConstantUtils.castConstant(structField, mapField.getConstantValue))
           }
-          case true => (mapField.getFieldName, ConstantUtils.castConstant(ComputeDataType.fromStructFieldJson(mapField.getStructFieldJson), mapField.getConstantValue))
         }
       })
 
-      //get outdata and rename
       val map = new mutable.HashMap[String, AnyRef]() ++= (rowdata.asInstanceOf[Map[String, AnyRef]])
-      var resultProcess = operator.process(map.asJava, packageAttrByStep(step)).map(data => {
-        val field = new ComputeField(data._1, DataType.STRING, true)
-        val outKey = defindmethod.getOutputMapping.get(field.getFieldName)
+      val resultProcess = operator.process(map.asJava, packageAttrByStep(step)).map(data => {
+        var field: ComputeField = null
+        var outKey: StreamFieldDTO = null
+        if(outFieldMap.containsKey(data._1)) {
+          field = new ComputeField(data._1, DataType.valueOf(outFieldMap.get(data._1).get.getFieldType.toUpperCase()), true)
+          outKey = outFieldMap.get(data._1).get
+        } else {
+          field = new ComputeField(data._1, DataType.valueOf(inFieldMap.get(data._1).get.getFieldType.toUpperCase()), true)
+          outKey = inFieldMap.get(data._1).get
+        }
 
-        if (outKey != null && outKey.isConstant == false) {
-          (outKey.getFieldName, data._2)
-        } else if (outKey != null && outKey.isConstant == true) {
-          (outKey.getFieldName, ConstantUtils.castConstant(ComputeDataType.fromStructFieldJson(outKey.getStructFieldJson), outKey.getConstantValue))
+        if (outKey != null && outKey.getConstant == false) {
+          (outKey.getStreamFieldName, data._2)
+        } else if (outKey != null && outKey.getConstant == true) {
+          val structField = StructField(field.getFieldName, ComputeDataType.fromStructField(field.getDataType.name()))
+          (outKey.getStreamFieldName, ConstantUtils.castConstant(structField, outKey.getConstantValue))
         } else {
           data
         }
       })
-
-      resultProcess = resultProcess.map(data => {
-        if (data._2.isInstanceOf[java.util.Date])
-          (data._1.replaceAll("appEmail_", ""), new sql.Date(data._2.asInstanceOf[java.util.Date].getTime).asInstanceOf[Any])
-        else if (data._2.isInstanceOf[java.util.Map[Any, Any]])
-          (data._1.replaceAll("appEmail_", ""), data._2.asInstanceOf[java.util.Map[Any, Any]].asScala)
-        else if (data._2.isInstanceOf[java.util.List[Any]])
-          (data._1.replaceAll("appEmail_", ""), data._2.asInstanceOf[java.util.List[Any]].asScala)
-        else
-          (data._1.replaceAll("appEmail_", ""), data._2)
-      })
       val resData: ArrayBuffer[Any] = ArrayBuffer()
-      outSchme.foreach(field => {
-        val oldVal: Any = if (oldSchme.getFieldIndex(field.name).isDefined) row.getAs(field.name) else null
+      outSchema.foreach(field => {
+        val oldVal: Any = if (oldSchema.getFieldIndex(field.name).isDefined) row.getAs(field.name) else null
         if (resultProcess.get(field.name).isDefined) resData += resultProcess.get(field.name).get else resData += oldVal
       })
-      new GenericRowWithSchema(resData.toArray, outSchme)
+      new GenericRowWithSchema(resData.toArray, outSchema)
     })
-    val frame: DataFrame = session.createDataFrame(rddRow, outSchme)
+    val frame: DataFrame = spark.createDataFrame(rddRow, outSchema)
     frame
-
   }
 
   /**
    * process spark jar(single dataset).
    **/
-  def computeSparkProcess(session: SparkSession, dfinput: DataFrame, udo: UserDefineOperator, process: SparkProcessProxy): DataFrame = {
-    var res = dfinput
-    udo.getInputMapping.foreach(mapping => {
-      mapping._2.isConstant match {
-        case false => res = res.withColumnRenamed(mapping._1, mapping._2.getFieldName)
-        case true => res = res.withColumn(mapping._2.getFieldName, functions.lit(ConstantUtils.castConstant(ComputeDataType.fromStructFieldJson(mapping._2.getStructFieldJson), mapping._2.getConstantValue)))
+  def executeSparkProcess(session: SparkSession,
+                          df: DataFrame,
+                          process: SparkProcessProxy,
+                          step: TransStepDTO): DataFrame = {
+    var res = df
+    step.getInputFields.foreach(f => {
+      f.getConstant.booleanValue() match {
+        case false => res = res.withColumnRenamed(f.getStreamFieldName, f.getFieldName)
+        case true => {
+          val structField = StructField(f.getFieldName, ComputeDataType.fromStructField(f.getFieldType))
+          res = res.withColumn(f.getFieldName, functions.lit(ConstantUtils.castConstant(structField, f.getConstantValue)))
+        }
       }
     })
     res = process.transform(session, res)
 
-    udo.getOutputMapping.foreach(mapping => {
-      mapping._2.isConstant match {
-        case false => res = res.withColumnRenamed(mapping._1, mapping._2.getFieldName)
-        case true => res = res.withColumn(mapping._2.getFieldName, functions.lit(ConstantUtils.castConstant(ComputeDataType.fromStructFieldJson(mapping._2.getStructFieldJson), mapping._2.getConstantValue)))
-      }
-    })
-    res
-  }
-
-  /**
-   * process spark jar(two datasets).
-   **/
-  def computeSparkProcess2(session: SparkSession, dfinput: DataFrame, udo: UserDefineOperator, process: SparkProcessProxy2): DataFrame = {
-    var res = dfinput
-    udo.getInputMapping.foreach(mapping => {
-      mapping._2.isConstant match {
-        case false => res = res.withColumnRenamed(mapping._1, mapping._2.getFieldName)
-        case true => res = res.withColumn(mapping._2.getFieldName, functions.lit(ConstantUtils.castConstant(ComputeDataType.fromStructFieldJson(mapping._2.getStructFieldJson), mapping._2.getConstantValue)))
-      }
-    })
-    res = process.transform(session, res, res)
-
-    udo.getOutputMapping.foreach(mapping => {
-      mapping._2.isConstant match {
-        case false => res = res.withColumnRenamed(mapping._1, mapping._2.getFieldName)
-        case true => res = res.withColumn(mapping._2.getFieldName, functions.lit(ConstantUtils.castConstant(ComputeDataType.fromStructFieldJson(mapping._2.getStructFieldJson), mapping._2.getConstantValue)))
+    step.getOutputFields.foreach(f => {
+      f.getConstant.booleanValue() match {
+        case false => res = res.withColumnRenamed(f.getStreamFieldName, f.getFieldName)
+        case true => {
+          val structField = StructField(f.getFieldName, ComputeDataType.fromStructField(f.getFieldType))
+          res = res.withColumn(f.getFieldName, functions.lit(ConstantUtils.castConstant(structField, f.getConstantValue)))
+        }
       }
     })
     res
@@ -302,7 +286,7 @@ object ComputeProcess {
 
       val lines = Source.fromInputStream(process1.getInputStream)("utf-8").getLines
 
-      val newPartion = list.iterator.map[Row](row => {
+      val newPartition = list.iterator.map[Row](row => {
         val str = row.getAs[String](field)
         out.println(str)
         out.flush()
@@ -326,7 +310,7 @@ object ComputeProcess {
         res
       }
 
-      newPartion
+      newPartition
     })
 
     val res = session.createDataFrame(resultRdd, df.schema)

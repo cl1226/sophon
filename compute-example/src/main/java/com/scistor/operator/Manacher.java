@@ -8,10 +8,10 @@ public class Manacher implements ComputeOperator {
 
     @Override
     public Map<String, Object> process(Map<String, Object> rowdata, Map<String, String> attributes) {
-        String str = (String) rowdata.getOrDefault("str", "");
+        String str = (String) rowdata.getOrDefault("in", "");
         String res = check(str);
         System.out.println(str + ": " + res);
-        rowdata.put("res_out", res);
+        rowdata.put("res", res);
         return rowdata;
     }
 

@@ -7,6 +7,20 @@ import org.json4s.jackson.JsonMethods.{compact, parse, render}
 object ComputeDataType extends Serializable {
   def fromStructFieldJson(json: String): StructField = parseStructField(parse(json))
 
+  def fromStructField(fieldType: String) = {
+    fieldType match {
+      case "string" => DataTypes.StringType
+      case "integer" => DataTypes.IntegerType
+      case "double" => DataTypes.DoubleType
+      case "float" => DataTypes.FloatType
+      case "long" => DataTypes.LongType
+      case "boolean" => DataTypes.BooleanType
+      case "" => DataTypes.DateType
+      case "" => DataTypes.TimestampType
+      case "" => DataTypes.BinaryType
+    }
+  }
+
   private object JSortedObject {
     def unapplySeq(value: JValue): Option[List[(String, JValue)]] = value match {
       case org.json4s.JObject(seq) => Some(seq.toList.sortBy(_._1))

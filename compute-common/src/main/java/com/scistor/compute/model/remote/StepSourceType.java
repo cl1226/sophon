@@ -1,9 +1,11 @@
 package com.scistor.compute.model.remote;
 
+import java.io.Serializable;
+
 /**
  * @author kaneshiro.J 2020/9/1
  */
-public enum StepSourceType {
+public enum StepSourceType implements Serializable {
 
     /**
      * 数据源
