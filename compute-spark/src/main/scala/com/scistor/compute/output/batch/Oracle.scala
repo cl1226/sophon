@@ -34,6 +34,11 @@ class Oracle extends BaseOutput {
 
   override def process(df: Dataset[Row]): Unit = {
     val attrs = config.getStepAttributes
+    println(s"[INFO] 输出数据源 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
     val prop = new Properties()
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     for ((k, v) <- definedProps) {

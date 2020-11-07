@@ -46,6 +46,12 @@ class Mysql extends BaseOutput {
     }
     prop.setProperty("driver", "com.mysql.cj.jdbc.Driver")
 
+    println(s"[INFO] 输出数据源 <${config.getStepType}> properties: ")
+    prop.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val saveMode = definedProps.getOrElse("saveMode", "append").toString
 
     df.write.mode(saveMode).jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, prop)

@@ -38,6 +38,11 @@ class Gbase extends BaseOutput {
 
   override def process(df: Dataset[Row]): Unit = {
     val attrs = config.getStepAttributes
+    println(s"[INFO] 输出数据源 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     val saveMode = definedProps.getOrDefault("saveMode", "append").toString
 

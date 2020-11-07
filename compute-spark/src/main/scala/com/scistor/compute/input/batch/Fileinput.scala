@@ -4,12 +4,13 @@ import com.scistor.compute.apis.BaseStaticInput
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.functions.col
-import org.apache.spark.sql.types.ComputeDataType
+import org.apache.spark.sql.types.{ComputeDataType, DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import scalaj.http
 import scalaj.http.Http
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 class Fileinput extends BaseStaticInput {
 
@@ -70,7 +71,17 @@ class Fileinput extends BaseStaticInput {
         if(attrs.containsKey("separator") && StringUtils.isNotBlank(attrs.get("separator").toString)) {
           delimiter = attrs.get("separator").toString
         }
-        reader.option("header", "true").option("delimiter", delimiter).csv(ds)
+        if (attrs.containsKey("header") && attrs.get("header").toString.equals("true")) {
+          reader.option("header", true).option("delimiter", delimiter).csv(ds)
+        } else {
+          val frame = reader.option("delimiter", delimiter).csv(ds)
+          val structFields = mutable.ArrayBuffer[StructField]()
+          config.getOutputFields.foreach(output => {
+            structFields += DataTypes.createStructField(output.getStreamFieldName, ComputeDataType.fromStructField(output.getFieldType), true)
+          })
+          val structType = DataTypes.createStructType(structFields.toArray)
+          spark.createDataFrame(frame.rdd, structType)
+        }
       }
       case _ => spark.createDataset(result.split("\n").toSeq).toDF()
     }

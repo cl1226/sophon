@@ -3,7 +3,12 @@ package com.scistor.compute.input.batch
 import com.scistor.compute.apis.BaseStaticInput
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.commons.lang3.StringUtils
+import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.types.{ComputeDataType, DataTypes, StructField}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 class File extends BaseStaticInput {
 
@@ -62,20 +67,44 @@ class File extends BaseStaticInput {
 
   protected def fileReader(spark: SparkSession, path: String): Dataset[Row] = {
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val format = attrs.get("format").toString.toLowerCase()
     val reader = spark.read.format(format)
 
     format match {
       case "text" => reader.load(path).withColumnRenamed("value", "raw_message")
       case "parquet" => reader.parquet(path)
-      case "json" => reader.option("mode", "PERMISSIVE").json(path)
+      case "json" => {
+        var df = reader.option("mode", "PERMISSIVE").json(path)
+        config.getOutputFields.foreach(output => {
+          val dataType = ComputeDataType.fromStructField(output.getFieldType.toLowerCase())
+          df = df.withColumn(output.getStreamFieldName, col(output.getStreamFieldName).cast(dataType))
+        })
+        df
+      }
       case "orc" => reader.orc(path)
       case "csv" => {
         var delimiter: String = ","
-        if(attrs.containsKey("delimiter") && StringUtils.isNotBlank(attrs.get("delimiter").toString)) {
-          delimiter = attrs.get("delimiter").toString
+        if(attrs.containsKey("separator") && StringUtils.isNotBlank(attrs.get("separator").toString)) {
+          delimiter = attrs.get("separator").toString
         }
-        reader.option("header", "true").option("delimiter", delimiter).csv(path)
+        if (attrs.containsKey("header") && attrs.get("header").toString.equals("true")) {
+          reader.option("header", true).option("delimiter", delimiter).csv(path)
+        } else {
+          val frame = reader.option("delimiter", delimiter).csv(path)
+          val structFields = mutable.ArrayBuffer[StructField]()
+          config.getOutputFields.foreach(output => {
+            structFields += DataTypes.createStructField(output.getStreamFieldName, ComputeDataType.fromStructField(output.getFieldType), true)
+          })
+          val structType = DataTypes.createStructType(structFields.toArray)
+          spark.createDataFrame(frame.rdd, structType)
+        }
       }
       case _ => reader.format(format).load(path)
     }

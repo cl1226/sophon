@@ -4,9 +4,13 @@ import java.util
 
 import com.scistor.compute.apis.BaseStaticInput
 import com.scistor.compute.model.remote.TransStepDTO
+import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.types.ComputeDataType
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import scalaj.http
 import scalaj.http.Http
+
+import scala.collection.JavaConversions._
 
 class Http extends BaseStaticInput {
 
@@ -58,7 +62,14 @@ class Http extends BaseStaticInput {
     val reader = spark.read.format(format)
 
     format match {
-      case "json" => reader.option("mode", "PERMISSIVE").json(ds)
+      case "json" => {
+        var df = reader.option("mode", "PERMISSIVE").json(ds)
+        config.getOutputFields.foreach(output => {
+          val dataType = ComputeDataType.fromStructField(output.getFieldType.toLowerCase())
+          df = df.withColumn(output.getStreamFieldName, col(output.getStreamFieldName).cast(dataType))
+        })
+        df
+      }
       case _ => ds.toDF()
     }
 

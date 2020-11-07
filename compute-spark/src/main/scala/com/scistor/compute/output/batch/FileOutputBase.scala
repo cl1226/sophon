@@ -7,6 +7,8 @@ import com.scistor.compute.apis.BaseOutput
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{DataFrameWriter, Dataset, Row, SaveMode}
 
+import scala.collection.JavaConversions._
+
 abstract class FileOutputBase extends BaseOutput {
 
   var config: TransStepDTO = _
@@ -47,6 +49,11 @@ abstract class FileOutputBase extends BaseOutput {
 
   def processImpl(df: Dataset[Row], defaultUriSchema: String): Unit = {
     val attrs = config.getStepAttributes
+    println(s"[INFO] 输出数据源 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
     val writer = fileWriter(df)
     var path = buildPathWithDefaultSchema(attrs.get("connectAddress").toString, defaultUriSchema)
     val format = attrs.get("format").toString.toLowerCase()
