@@ -30,22 +30,7 @@ class File extends BaseStaticInput {
   /**
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
-  override def validate(): (Boolean, String) = {
-    val attrs = config.getStepAttributes
-    attrs.containsKey("catalog") match {
-      case true => {
-        // TODO CHECK hosts
-        (true, "")
-      }
-      case false => (false, "please specify [catalog] as a non-empty string")
-    }
-    attrs.containsKey("format") match {
-      case true => {
-        (true, "")
-      }
-      case false => (false, "please specify [format] as a of [text, json, csv]")
-    }
-  }
+  override def validate(): (Boolean, String) = (true, "")
 
   /**
    * Get DataFrame from this Static Input.
@@ -74,11 +59,11 @@ class File extends BaseStaticInput {
       println("\t" + key + " = " + value)
     })
 
-    val format = attrs.get("format").toString.toLowerCase()
+    val format = attrs.get("dataFormatType").toString.toLowerCase()
     val reader = spark.read.format(format)
 
     format match {
-      case "text" => reader.load(path).withColumnRenamed("value", "raw_message")
+      case "txt" => reader.load(path).withColumnRenamed("value", "raw_message")
       case "parquet" => reader.parquet(path)
       case "json" => {
         var df = reader.option("mode", "PERMISSIVE").json(path)
@@ -103,6 +88,9 @@ class File extends BaseStaticInput {
             structFields += DataTypes.createStructField(output.getStreamFieldName, ComputeDataType.fromStructField(output.getFieldType), true)
           })
           val structType = DataTypes.createStructType(structFields.toArray)
+          if (frame.columns.length != structFields.length) {
+            throw new RuntimeException("数据源的列数和定义的schema不符合，请检查!")
+          }
           spark.createDataFrame(frame.rdd, structType)
         }
       }
