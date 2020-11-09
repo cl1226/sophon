@@ -51,6 +51,14 @@ class Jdbc extends BaseStaticInput {
   }
 
   def jdbcReader(sparkSession: SparkSession, driver: String): Dataset[Row] = {
+    val strategy = config.getStrategy
+
+    if (strategy != null) {
+      println(s"[INFO] 任务 <${config.getName}> properties: ")
+      println(s"\t执行模式=${strategy.getRunMode}")
+      println(s"\t时间单位=${strategy.getTimeUnit}")
+    }
+
     val attrs = config.getStepAttributes
 
     println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")

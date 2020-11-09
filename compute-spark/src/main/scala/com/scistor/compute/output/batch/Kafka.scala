@@ -48,8 +48,8 @@ class Kafka extends BaseOutput {
     props.setProperty("format", "json")
     props.setProperty("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props.setProperty("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    props.setProperty("bootstrap.servers", attrs.get("bootstrap_urls").toString)
-    props.setProperty("group.id", attrs.get("group_id").toString)
+    props.setProperty("bootstrap.servers", attrs.get("serverAddress").toString)
+    props.setProperty("group.id", attrs.get("groupid").toString)
 
     if (attrs.containsKey("kerberos") && attrs.get("kerberos").toString.equals("true")){
       props.setProperty("security.protocol", "SASL_PLAINTEXT")

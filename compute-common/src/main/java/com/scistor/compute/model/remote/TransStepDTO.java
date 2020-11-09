@@ -59,6 +59,8 @@ public class TransStepDTO implements Serializable {
 
     private String stepFrom;
 
+    private TransStrategy strategy;
+
     public String getId() {
         return id;
     }
@@ -137,5 +139,13 @@ public class TransStepDTO implements Serializable {
 
     public void setStepFrom(String stepFrom) {
         this.stepFrom = stepFrom;
+    }
+
+    public TransStrategy getStrategy() {
+        return strategy;
+    }
+
+    public void setStrategy(TransStrategy strategy) {
+        this.strategy = strategy;
     }
 }

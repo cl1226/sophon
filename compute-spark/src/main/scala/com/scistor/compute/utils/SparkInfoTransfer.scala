@@ -39,6 +39,7 @@ object SparkInfoTransfer extends Logging {
                   streamingInputs = streamingInputs + (step.getStepInfo.getName -> step.getStepInfo)
                 }
                 case _ => {
+                  step.getStepInfo.setStrategy(info.getStrategy)
                   staticInputs = staticInputs + (step.getStepInfo.getName -> step.getStepInfo)
                 }
               }

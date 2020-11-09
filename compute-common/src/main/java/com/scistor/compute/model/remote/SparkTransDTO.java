@@ -10,6 +10,8 @@ public class SparkTransDTO implements Serializable {
 
     private String transName;
 
+    private TransStrategy strategy;
+
     private List<SparkStepDTO> stepList;
 
     private RedisConfig redisConfig;
@@ -22,6 +24,14 @@ public class SparkTransDTO implements Serializable {
 
     public void setTransName(String transName) {
         this.transName = transName;
+    }
+
+    public TransStrategy getStrategy() {
+        return strategy;
+    }
+
+    public void setStrategy(TransStrategy strategy) {
+        this.strategy = strategy;
     }
 
     public List<SparkStepDTO> getStepList() {

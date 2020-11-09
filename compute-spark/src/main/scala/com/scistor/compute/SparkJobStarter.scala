@@ -137,7 +137,7 @@ object SparkJobStarter extends Logging {
                                  ): Unit = {
     val info = SparkInfoTransfer.jobInfo
     jobName = sparkSession.sparkContext.getConf.get("spark.app.name", SparkInfoTransfer.jobName)
-    val duration = sparkSession.sparkContext.getConf.getLong("spark.streaming.batchDuration", 10L)
+    val duration: Long = info.getStepList.get(0).getStepInfo.getStepAttributes.asScala.getOrElse("batchDuration", 10).toString.toLong
     val ssc = new StreamingContext(sparkSession.sparkContext, Seconds(duration))
 
     basePrepare(sparkSession, staticInputs, streamingInputs, outputs)

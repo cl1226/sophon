@@ -3,7 +3,7 @@ package com.scistor.compute.input.sparkstreaming
 import java.util.Properties
 
 import com.scistor.compute.apis.BaseStreamingInput
-import com.scistor.compute.input.sparkstreaming.kafkaStreamProcess.{CsvStreamProcess, JsonStreamProcess}
+import com.scistor.compute.input.sparkstreaming.kafkaStreamProcess.{AvroStreamProcess, CsvStreamProcess, JsonStreamProcess}
 import com.scistor.compute.model.remote.TransStepDTO
 import com.scistor.compute.model.spark.{DecodeType, SinkAttribute, SourceAttribute}
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -39,7 +39,12 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
   override def validate(): (Boolean, String) = {
-    (true, "")
+    val attrs = config.getStepAttributes
+    if (!attrs.containsKey("host")) {
+      (false, s"please specify [connectUrl] in ${attrs.getOrElse("dataSourceType", "")} as a non-empty string")
+    } else {
+      (true, "")
+    }
   }
 
   override def prepare(spark: SparkSession): Unit = {
@@ -51,8 +56,8 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
     props.setProperty("format", "json")
     props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
     props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-    props.setProperty("bootstrap.servers", attrs.getOrDefault("bootstrap_urls", "").toString)
-    props.setProperty("group.id", attrs.getOrDefault("group_id", "").toString)
+    props.setProperty("bootstrap.servers", attrs.getOrDefault("serverAddress", "").toString)
+    props.setProperty("group.id", attrs.getOrDefault("groupid", "").toString)
     props.setProperty("enable.auto.commit", "false")
 
     if (attrs.containsKey("kerberos") && attrs.getOrElse("kerberos", "").toString.equals("true")){
@@ -87,9 +92,10 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
     val attrs = config.getStepAttributes
     val inputDStream = getDStream(ssc)
 
-    val handlerInstance: KafkaStream = DecodeType.valueOf(attrs.get("decodeType").toString) match {
+    val handlerInstance: KafkaStream = DecodeType.valueOf(attrs.get("dataFormatType").toString.toUpperCase) match {
       case DecodeType.JSON => new JsonStreamProcess(config)
       case DecodeType.CSV => new CsvStreamProcess(config)
+      case DecodeType.AVRO => new AvroStreamProcess(config)
       case _ => null
     }
 
