@@ -41,7 +41,7 @@ class UserDefinedTransform extends BaseTransform {
     var frame = df
     val attrs = config.getStepAttributes
 
-    println(s"[INFO] 自定义算子 <${config.getStepType}> input properties: ")
+    println(s"[INFO] 自定义算子 <${config.getStepType}> properties: ")
     attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)
@@ -69,9 +69,9 @@ class UserDefinedTransform extends BaseTransform {
         }
       }
       // execute java/scala code
-      case OperatorImplementMethod.ScriptJava | OperatorImplementMethod.ScriptJava => {
+      case OperatorImplementMethod.ScriptJava | OperatorImplementMethod.ScriptScala => {
         val codeBlock = attrs.get("codeBlock").toString
-        val invokeInfo = new InvokeInfo("", attrs.get("methodName").toString, CommonUtil.portalField2ComputeField(config.getOutputFields))
+        val invokeInfo = new InvokeInfo("", attrs.get("methodName").toString, CommonUtil.portalField2ComputeField(config.getInputFields))
         invokeInfo.setCode(codeBlock)
         frame = processDynamicCode(spark, frame, invokeInfo, config)
       }

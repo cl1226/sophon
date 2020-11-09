@@ -50,8 +50,6 @@ object ClassCreateUtils {
     val className = s"dynamic_class_${UUID.randomUUID().toString.replaceAll("-", "")}"
     val classBody =
       s"""
-         |import scalaj.http
-         |import scalaj.http.Http
          |
          |class $className extends Serializable{
          |  $function

@@ -68,7 +68,7 @@ class Kafka extends BaseOutput {
   override def process(df: Dataset[Row]): Unit = {
     val attrs = config.getStepAttributes
     val topic = attrs.get("topic").toString
-    val format = attrs.get("format").toString
+    val format = attrs.get("dataFormatType").toString
     format match {
       case "text" => {
         if (df.schema.size != 1) {
