@@ -72,15 +72,25 @@ class Fileinput extends BaseStaticInput {
           delimiter = attrs.get("separator").toString
         }
         if (attrs.containsKey("header") && attrs.get("header").toString.equals("true")) {
-          reader.option("header", true).option("delimiter", delimiter).csv(ds)
+          var df = reader.option("header", true).option("delimiter", delimiter).csv(ds)
+          config.getOutputFields.foreach(output => {
+            val dataType = ComputeDataType.fromStructField(output.getFieldType.toLowerCase())
+            df = df.withColumn(output.getStreamFieldName, col(output.getStreamFieldName).cast(dataType))
+          })
+          df
         } else {
           val frame = reader.option("delimiter", delimiter).csv(ds)
           val structFields = mutable.ArrayBuffer[StructField]()
           config.getOutputFields.foreach(output => {
-            structFields += DataTypes.createStructField(output.getStreamFieldName, ComputeDataType.fromStructField(output.getFieldType), true)
+            structFields += DataTypes.createStructField(output.getStreamFieldName, DataTypes.StringType, true)
           })
           val structType = DataTypes.createStructType(structFields.toArray)
-          spark.createDataFrame(frame.rdd, structType)
+          var df = spark.createDataFrame(frame.rdd, structType)
+          config.getOutputFields.foreach(output => {
+            val dataType = ComputeDataType.fromStructField(output.getFieldType.toLowerCase())
+            df = df.withColumn(output.getStreamFieldName, col(output.getStreamFieldName).cast(dataType))
+          })
+          df
         }
       }
       case _ => spark.createDataset(result.split("\n").toSeq).toDF()

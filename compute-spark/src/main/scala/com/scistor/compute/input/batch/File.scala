@@ -85,13 +85,18 @@ class File extends BaseStaticInput {
           val frame = reader.option("delimiter", delimiter).csv(path)
           val structFields = mutable.ArrayBuffer[StructField]()
           config.getOutputFields.foreach(output => {
-            structFields += DataTypes.createStructField(output.getStreamFieldName, ComputeDataType.fromStructField(output.getFieldType), true)
+            structFields += DataTypes.createStructField(output.getStreamFieldName, DataTypes.StringType, true)
           })
           val structType = DataTypes.createStructType(structFields.toArray)
           if (frame.columns.length != structFields.length) {
             throw new RuntimeException("数据源的列数和定义的schema不符合，请检查!")
           }
-          spark.createDataFrame(frame.rdd, structType)
+          var df = spark.createDataFrame(frame.rdd, structType)
+          config.getOutputFields.foreach(output => {
+            val dataType = ComputeDataType.fromStructField(output.getFieldType.toLowerCase())
+            df = df.withColumn(output.getStreamFieldName, col(output.getStreamFieldName).cast(dataType))
+          })
+          df
         }
       }
       case _ => reader.format(format).load(path)
