@@ -1,5 +1,8 @@
 package com.scistor.operator
 
+import java.text.{DateFormat, SimpleDateFormat}
+import java.util.Calendar
+
 object Test1 {
 
   def process(args: Seq[Any]): String = {
@@ -14,8 +17,48 @@ object Test1 {
   }
 
   def main(args: Array[String]): Unit = {
-    val str = process(Seq("aaa", "bbb"))
-    println(str)
+//    val str = process(Seq("aaa", "bbb"))
+//    println(str)
+    var dateFormat: DateFormat = null
+    val str: String = "yyyy-MM-dd/*"
+    val hdfsTimeRange: Int = 1
+    val calendar = Calendar.getInstance()
+    val res = str.split("/").length match {
+      case 2 => {
+        val SP = "((.*)/(.*))".r
+        val SP(all, a, b) = str.replace("*", "")
+        dateFormat = new SimpleDateFormat(a)
+        val now = dateFormat.format(calendar.getTime)
+        b match {
+          case "" => {
+            calendar.add(Calendar.DATE, -hdfsTimeRange)
+            val date = dateFormat.format(calendar.getTime)
+            str.replace(a, date)
+          }
+          case _ => {
+            calendar.add(Calendar.HOUR, -hdfsTimeRange)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            val timestamp = calendar.getTime.getTime.toString
+            str.replace(a, now).replace(b, timestamp)
+          }
+        }
+      }
+      case 3 => {
+        val SP = "((.*)/(.*)/(.*))".r
+        val SP(all, a, b, c) = str.replace("*", "")
+        dateFormat = new SimpleDateFormat(a)
+        val now = dateFormat.format(calendar.getTime)
+        calendar.add(Calendar.HOUR, -hdfsTimeRange)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val timestamp = calendar.getTime.getTime.toString
+        str.replace(a, now).replace(b, timestamp)
+      }
+    }
+    println(res)
   }
 
 }

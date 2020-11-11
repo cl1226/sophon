@@ -19,11 +19,12 @@ public class Test {
 //        boolean res = matcher.matches();
 //        System.out.println(res);
 
-        long checksum = 10;
+//        long checksum = 10;
+//
+//        long n2 = (checksum >> 16) + (checksum & 0xffff) * 2;
+//
+//        System.out.println(n2);
 
-        long n2 = (checksum >> 16) + (checksum & 0xffff) * 2;
-
-        System.out.println(n2);
     }
 
 }

@@ -1,6 +1,7 @@
 package com.scistor.compute.input.batch
 
-import java.text.SimpleDateFormat
+import java.text.{DateFormat, SimpleDateFormat}
+import java.util
 import java.util.Calendar
 
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
@@ -40,30 +41,53 @@ class Hdfs extends File {
     }
 
     val attrs = config.getStepAttributes
-    var path = buildPathWithDefaultSchema(attrs.get("connectAddress").toString, "hdfs://")
+    val path = buildPathWithDefaultSchema(attrs.get("connectAddress").toString, "hdfs://")
 
-    strategy.getRunMode match {
-      case "single" => fileReader(spark, path)
-      case "cycle" => {
+    // 读取方式：全量(full)/增量(increment)
+    val read = attrs.get("read").asInstanceOf[util.Map[String, AnyRef]]
+    read.getOrDefault("type", "full").toString match {
+      case "full" => fileReader(spark, path)
+      case "increment" => {
         val calendar = Calendar.getInstance()
-        val format = new SimpleDateFormat("yyyy-MM-dd")
-        calendar.add(Calendar.HOUR, -1)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val date = format.format(calendar.getTime)
-        val timestamp = calendar.getTime.getTime
-        strategy.getTimeUnit match {
-          case "HOUR" => {
-            path = path + "/" + date + "/" + timestamp + "*"
+        val hdfsRange: String = read.getOrDefault("hdfsDirectoryTemplate", "yyyy-MM-dd/timestamp*").toString
+        var dateFormat: DateFormat = null
+        val hdfsTimeRange: Int = read.getOrDefault("hdfsTimeRange", "1").toString.toInt
+        val res = hdfsRange.split("/").length match {
+          case 2 => {
+            val SP = "((.*)/(.*))".r
+            val SP(all, a, b) = hdfsRange.replace("*", "")
+            dateFormat = new SimpleDateFormat(a)
+            val now = dateFormat.format(calendar.getTime)
+            b match {
+              case "" => {
+                calendar.add(Calendar.DATE, -hdfsTimeRange)
+                val date = dateFormat.format(calendar.getTime)
+                hdfsRange.replace(a, date)
+              }
+              case _ => {
+                calendar.add(Calendar.HOUR, -hdfsTimeRange)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                val timestamp = calendar.getTime.getTime.toString
+                hdfsRange.replace(a, now).replace(b, timestamp)
+              }
+            }
           }
-          case "DAILY" => {
-            calendar.add(Calendar.DATE, -1)
-            val date = format.format(calendar.getTime)
-            path = path + "/" + date + "/*"
+          case 3 => {
+            val SP = "((.*)/(.*)/(.*))".r
+            val SP(all, a, b, c) = hdfsRange.replace("*", "")
+            dateFormat = new SimpleDateFormat(a)
+            val now = dateFormat.format(calendar.getTime)
+            calendar.add(Calendar.HOUR, -hdfsTimeRange)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            val timestamp = calendar.getTime.getTime.toString
+            hdfsRange.replace(a, now).replace(b, timestamp)
           }
         }
-        fileReader(spark, path)
+        fileReader(spark, path + "/" + res)
       }
     }
   }
