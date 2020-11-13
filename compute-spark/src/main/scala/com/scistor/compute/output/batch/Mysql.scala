@@ -40,6 +40,7 @@ class Mysql extends BaseOutput {
     val attrs = config.getStepAttributes
     val prop = new Properties()
 
+    val writeProps = attrs.get("write").asInstanceOf[util.Map[String, AnyRef]]
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     for ((k, v) <- definedProps) {
       prop.setProperty(k, v.toString)
@@ -52,7 +53,12 @@ class Mysql extends BaseOutput {
       println("\t" + key + " = " + value)
     })
 
-    val saveMode = definedProps.getOrElse("saveMode", "append").toString
+    writeProps.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + "=" + value)
+    })
+
+    val saveMode = writeProps.getOrDefault("saveMode", "append").toString
 
     df.write.mode(saveMode).jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, prop)
 

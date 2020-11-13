@@ -2,9 +2,8 @@ package com.scistor.compute.input.batch
 
 import java.text.{DateFormat, SimpleDateFormat}
 import java.util
-import java.util.{Calendar, Properties}
+import java.util.{Calendar, Date, Properties}
 
-import com.alibaba.fastjson.JSON
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 import scala.collection.JavaConversions._
@@ -16,7 +15,7 @@ class Mysql extends Jdbc {
     jdbcReader(spark, "com.mysql.cj.jdbc.Driver")
   }
 
-  override def initProp(driver: String): (Properties, Array[String]) = {
+  override def initProp(spark: SparkSession, driver: String): (Properties, Array[String]) = {
     val attrs = config.getStepAttributes
     val prop = new Properties()
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
@@ -25,11 +24,12 @@ class Mysql extends Jdbc {
     }
     prop.setProperty("driver", driver)
 
-    val strategy = config.getStrategy
-    strategy.getRunMode match {
-      case "single" => {
-        // 单次执行: 根据页面提供的分区字段并行读
-        val partColumnName = definedProps.getOrElse("partColumnName", "")
+    // 读取方式：全量(full)/增量(increment)
+    val read = attrs.get("read").asInstanceOf[util.Map[String, AnyRef]]
+    val partColumnName = definedProps.getOrElse("partColumnName", "")
+    var predicates: Array[String] = null
+    read.getOrDefault("type", "full").toString match {
+      case "full" => {
         partColumnName match {
           case "" => (prop, new Array[String](0))
           case _ => {
@@ -47,34 +47,43 @@ class Mysql extends Jdbc {
           }
         }
       }
-      case "cycle" => {
-        val partColumnName = definedProps.getOrElse("partColumnName", "")
-        partColumnName match {
-          case "" => (prop, new Array[String](0))
-          case _ => {
-            val numPartitions: Int = Integer.valueOf(definedProps.getOrElse("numPartitions", "1").toString)
-
-            var precision = 0
-            val totalLen = 1
-            var predicates: Array[String] = null
-
-            strategy.getTimeUnit match {
-              case "HOUR" => precision = 60 * 60 * 1000
-              case "DAILY" => precision = 24 * 60 * 60 * 1000
+      case "increment" => {
+        val incrementColumn = read.getOrElse("jdbcTimestampColumn", "").toString
+        incrementColumn match {
+          case "" => {
+            partColumnName match {
+              case "" => (prop, new Array[String](0))
+              case _ => {
+                val numPartitions: Int = Integer.valueOf(definedProps.getOrElse("numPartitions", "1").toString)
+                var predicates: Array[String] = null
+                // 取模的方式划分分区, 所以分区字段的选择最好是均匀分布的, 分区的效果比较好
+                if (!partColumnName.equals("")) {
+                  val arr = ArrayBuffer[Int]()
+                  for(i <- 0 until numPartitions){
+                    arr.append(i)
+                  }
+                  predicates = arr.map(i=>{s"SHA1($partColumnName)%$numPartitions = $i"}).toArray
+                }
+                (prop, predicates)
+              }
             }
-
+          }
+          case _ => {
             val format: DateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            val totalInterval = totalLen * precision
             val now = Calendar.getInstance()
-            val startTime = now.getTime.getTime - totalInterval
-            val unitInterval = totalInterval / numPartitions
+            val lastReadTimestamp: String = "2020-11-11 17:00:00"
+            // 获取最近一次的增量时间记录
+            val startTime = new Date(lastReadTimestamp).getTime
+            val precision = now.getTime.getTime - startTime
+            val totalInterval = precision
+            val numPartitions: Int = Integer.valueOf(definedProps.getOrElse("numPartitions", "1").toString)
             val tuples = ArrayBuffer[(String, String)]()
+            val unitInterval = totalInterval / numPartitions
             for (i <- 0 until numPartitions ) {
               val start = format.format(startTime + i * unitInterval)
               val end  = format.format(startTime + (i + 1) * unitInterval)
               tuples.+= ((start, end))
             }
-
             predicates = tuples.map(elem => {
               s"cast($partColumnName as datetime) >= '${elem._1}' and cast($partColumnName as datetime) < '${elem._2}'"
             }).toArray

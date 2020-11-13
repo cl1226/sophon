@@ -15,7 +15,7 @@ class Gaussdb extends Jdbc {
     jdbcReader(spark, "com.huawei.gauss200.jdbc.Driver")
   }
 
-  override def initProp(driver: String): (Properties, Array[String]) = {
+  override def initProp(spark: SparkSession, driver: String): (Properties, Array[String]) = {
     val attrs = config.getStepAttributes
     val prop = new Properties()
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]

@@ -39,7 +39,7 @@ class Jdbc extends BaseStaticInput {
     }
   }
 
-  def initProp(driver: String): Tuple2[Properties, Array[String]] = {
+  def initProp(spark: SparkSession, driver: String): Tuple2[Properties, Array[String]] = {
     val attrs = config.getStepAttributes
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     val prop = new Properties()
@@ -68,7 +68,7 @@ class Jdbc extends BaseStaticInput {
     })
 
     var dataframe: Dataset[Row] = null
-    val tuple = initProp(driver)
+    val tuple = initProp(sparkSession, driver)
     if (tuple._2 != null && tuple._2.length > 0) {
       tuple._2.map(x => {
         println(s"source predicates: $x")
