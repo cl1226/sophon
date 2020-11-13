@@ -329,10 +329,6 @@ object SparkJobStarter extends Logging {
       println("[INFO] output dataframe: ")
       ds.show(5)
 
-//      if (ds.take(1).size > 0) {
-//        writeSimpleData(ds, s"${SparkInfoTransfer.jobName} - ${config.getName}")
-//      }
-
       // 写入mysql，统计输出
       new JdbcUtil(sparkSession, SparkInfoTransfer.jobInfo.getMysqlConfig).writeDataCount(ds.count().toString, "0", jobName)
       output.process(ds)

@@ -100,16 +100,21 @@ class Postgresql extends BaseOutput {
       println("\t" + key + " = " + value)
     })
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
-    val saveType = definedProps.getOrDefault("saveType", "jdbc")
+    val writeProps = attrs.get("write").asInstanceOf[util.Map[String, AnyRef]]
+    val saveType = writeProps.getOrDefault("saveType", "jdbc")
 
     saveType match {
       case "jdbc" => {
-        val saveMode = definedProps.getOrDefault("saveMode", "append").toString
+        val saveMode = writeProps.getOrDefault("saveMode", "append").toString
         val prop = new Properties
+        prop.setProperty("driver", "org.postgresql.Driver")
         for ((k, v) <- definedProps) {
           prop.setProperty(k, v.toString)
         }
-        prop.setProperty("driver", "org.postgresql.Driver")
+        writeProps.foreach(entry => {
+          val (key, value) = entry
+          println("\t" + key + "=" + value)
+        })
 
         df.write.mode(saveMode).jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, prop)
       }
