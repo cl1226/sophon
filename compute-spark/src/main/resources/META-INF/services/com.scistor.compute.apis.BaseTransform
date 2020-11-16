@@ -8,5 +8,5 @@ com.scistor.compute.transform.Sample
 com.scistor.compute.transform.Batchfilter
 com.scistor.compute.transform.Filter
 com.scistor.compute.transform.Script
-com.scistor.compute.transform.Add
+com.scistor.compute.transform.Constant
 com.scistor.compute.transform.UserDefinedTransform

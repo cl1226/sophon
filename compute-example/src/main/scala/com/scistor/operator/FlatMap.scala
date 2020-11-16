@@ -14,20 +14,21 @@ class FlatMap extends SparkProcessProxy {
 
     val schema = ScalaReflection.schemaFor[FilterModel].dataType.asInstanceOf[StructType]
     val ds = spark.createDataFrame(table.rdd, schema)
+    ds.show()
     val f = ds.as[FilterModel].flatMap {
       case x: FilterModel => {
         var sips: java.util.List[java.lang.Long] = new java.util.ArrayList[java.lang.Long]()
         var dips: java.util.List[java.lang.Long] = new java.util.ArrayList[java.lang.Long]()
         if (StringUtils.isNotBlank(x.sip)) {
           if (x.sip.indexOf("/") >= 0) {
-            sips = IPChange.parseIpMaskRange(x.sip.split("/")(0), x.sip.split("/")(1))
+            sips.addAll(IPChange.parseIpMaskRange(x.sip.split("/")(0), x.sip.split("/")(1)))
           } else {
             sips.add(IPChange.getIpFromString(x.sip))
           }
         }
         if (StringUtils.isNotBlank(x.dip)) {
           if (x.dip.indexOf("/") >= 0) {
-            dips = IPChange.parseIpMaskRange(x.dip.split("/")(0), x.dip.split("/")(1))
+            dips.addAll(IPChange.parseIpMaskRange(x.dip.split("/")(0), x.dip.split("/")(1)))
           } else {
             dips.add(IPChange.getIpFromString(x.dip))
           }

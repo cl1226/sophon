@@ -190,8 +190,8 @@ object SparkJobStarter extends Logging {
                                                      sparkSession: SparkSession): Unit = {
     if (staticInputs.nonEmpty) {
       for (input <- staticInputs.slice(0, staticInputs.length)) {
-        val ds = input.getDataset(sparkSession)
-        convertDataType(ds, input)
+        var ds = input.getDataset(sparkSession)
+        ds = convertDataType(ds, input)
         registerInputTempView(input, ds)
         // 写入mysql，统计输入量
         new JdbcUtil(sparkSession, SparkInfoTransfer.jobInfo.getMysqlConfig).writeDataCount("0", ds.count().toString, jobName)
@@ -287,16 +287,29 @@ object SparkJobStarter extends Logging {
   }
 
   /**
-   * Convert data source field type to spark schema dataType
+   * Convert data source field type to spark schema dataType and drop unused columns
    */
-  private[scistor] def convertDataType(ds: Dataset[Row], input: BaseStaticInput): Unit = {
-    // 数据源schema dataType -> spark schema dataType
+  private[scistor] def convertDataType(ds: Dataset[Row], input: BaseStaticInput): DataFrame = {
+    var df = ds
+    // datasource schema dataType -> spark schema dataType
     input.getConfig().getOutputFields.foreach(field => {
       if (ds.columns.contains(field.getFieldName)) {
         val fieldType = field.getFieldType
-        ds.withColumn(field.getFieldName, ds.col(field.getFieldName).cast(fieldType))
+        df = ds.withColumn(field.getFieldName, ds.col(field.getFieldName).cast(fieldType))
       }
     })
+    // drop unused column
+    val outputFields = input.getConfig().getOutputFields.map(_.getStreamFieldName)
+    df.columns.foreach(col => {
+      if (!outputFields.contains(col)) {
+        df = df.drop(col)
+      }
+    })
+    df
+  }
+
+  implicit def contains(col: String) = {
+
   }
 
   private[scistor] def sink(sparkSession: SparkSession,
