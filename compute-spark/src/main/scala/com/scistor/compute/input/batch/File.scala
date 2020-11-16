@@ -1,5 +1,6 @@
 package com.scistor.compute.input.batch
 
+import java.util
 import com.scistor.compute.apis.BaseStaticInput
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.commons.lang3.StringUtils
@@ -79,7 +80,9 @@ class File extends BaseStaticInput {
         if(attrs.containsKey("separator") && StringUtils.isNotBlank(attrs.get("separator").toString)) {
           delimiter = attrs.get("separator").toString
         }
-        if (attrs.containsKey("header") && attrs.get("header").toString.equals("true")) {
+        if (attrs.get("properties") != null
+          && attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]].containsKey("header")
+          && attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]].get("header").toString.equals("true")) {
           reader.option("header", true).option("delimiter", delimiter).csv(path)
         } else {
           val frame = reader.option("delimiter", delimiter).csv(path)
