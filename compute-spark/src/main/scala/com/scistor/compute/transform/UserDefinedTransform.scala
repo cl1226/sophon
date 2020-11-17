@@ -34,7 +34,38 @@ class UserDefinedTransform extends BaseTransform {
    * Return true and empty string if config is valid, return false and error message if config is invalid.
    */
   override def validate(): (Boolean, String) = {
-    (true, "")
+    val attrs = config.getStepAttributes
+    OperatorImplementMethod.get(config.getStepType) match {
+      case OperatorImplementMethod.PackageJava | OperatorImplementMethod.PackageSpark => {
+        if (!attrs.containsKey("packageName") || !attrs.containsKey("methodName")) {
+          (false, s"please special ${config.getStepType} packageName and methodName as string")
+        } else {
+          (true, "")
+        }
+      }
+      case OperatorImplementMethod.ScriptJava | OperatorImplementMethod.ScriptScala => {
+        if (!attrs.containsKey("codeBlock") || !attrs.containsKey("methodName")) {
+          (false, s"please special ${config.getStepType} codeBlock and methodName as string")
+        } else {
+          (true, "")
+        }
+      }
+      case OperatorImplementMethod.ScriptSql => {
+        if (!attrs.containsKey("codeBlock")) {
+          (false, s"please special ${config.getStepType} codeBlock as string")
+        } else {
+          (true, "")
+        }
+      }
+      // execute python/shell
+      case OperatorImplementMethod.CommandPython | OperatorImplementMethod.CommandShell => {
+        if (!attrs.containsKey("codeFileUrl")) {
+          (false, s"please special ${config.getStepType} codeFileUrl as string")
+        } else {
+          (true, "")
+        }
+      }
+    }
   }
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {

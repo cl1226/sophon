@@ -215,7 +215,7 @@ object SparkJobStarter extends Logging {
 
         if (!isValid) {
           configValid = false
-          printf("Plugin[%s] contains invalid config, error: %s\n", p.name, msg)
+          printf("[ERROR] Plugin[%s] contains invalid config, error: %s\n", p.name, msg)
         }
       }
 
@@ -306,10 +306,6 @@ object SparkJobStarter extends Logging {
       }
     })
     df
-  }
-
-  implicit def contains(col: String) = {
-
   }
 
   private[scistor] def sink(sparkSession: SparkSession,

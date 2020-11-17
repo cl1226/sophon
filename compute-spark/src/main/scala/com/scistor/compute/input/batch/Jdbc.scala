@@ -70,14 +70,14 @@ class Jdbc extends BaseStaticInput {
     var dataframe: Dataset[Row] = null
     val tuple = initProp(sparkSession, driver)
     if (tuple._2 != null && tuple._2.length > 0) {
+      println(s"[INFO] 输入数据源 <${config.getStepType}> partitioned rules: ")
       tuple._2.map(x => {
-        println(s"source predicates: $x")
+        println(s"\t$x")
       })
       dataframe = sparkSession.read.jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, tuple._2, tuple._1)
     } else {
       dataframe = sparkSession.read.jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, tuple._1)
     }
-
     dataframe
   }
 
