@@ -2,8 +2,9 @@ package com.scistor.compute.input.batch
 
 import java.text.{DateFormat, SimpleDateFormat}
 import java.util
-import java.util.{Calendar, Date, Properties}
+import java.util.{Calendar, Properties}
 
+import com.scistor.compute.utils.{JdbcUtil, SparkInfoTransfer}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 import scala.collection.JavaConversions._
@@ -71,9 +72,13 @@ class Mysql extends Jdbc {
           case _ => {
             val format: DateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             val now = Calendar.getInstance()
-            val lastReadTimestamp: String = "2020-11-11 17:00:00"
-            // 获取最近一次的增量时间记录
-            val startTime = new Date(lastReadTimestamp).getTime
+            // 获取最近一次读取的增量时间记录
+            val lastReadTimestamp: String = new JdbcUtil(spark, SparkInfoTransfer.jobInfo.getMysqlConfig).queryIncrementalTime(
+              config.getId,
+              config.getName,
+              config.getStepId
+            )
+            val startTime = format.parse(lastReadTimestamp).getTime
             val precision = now.getTime.getTime - startTime
             val totalInterval = precision
             val numPartitions: Int = Integer.valueOf(definedProps.getOrElse("numPartitions", "1").toString)
@@ -85,8 +90,10 @@ class Mysql extends Jdbc {
               tuples.+= ((start, end))
             }
             predicates = tuples.map(elem => {
-              s"cast($partColumnName as datetime) >= '${elem._1}' and cast($partColumnName as datetime) < '${elem._2}'"
+              s"cast($incrementColumn as datetime) >= '${elem._1}' and cast($incrementColumn as datetime) < '${elem._2}'"
             }).toArray
+            prop.setProperty("now", format.format(now.getTime))
+
             (prop, predicates)
           }
         }

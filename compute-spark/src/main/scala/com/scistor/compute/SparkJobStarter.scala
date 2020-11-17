@@ -7,7 +7,6 @@ import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput
 import com.scistor.compute.model.remote.SparkTransDTO
 import com.scistor.compute.model.spark.ProjectInfo
 import com.scistor.compute.transform.UdfRegister
-import com.scistor.compute.utils.CommonUtil.writeSimpleData
 import com.scistor.compute.utils.{AsciiArt, CompressionUtils, ConfigBuilder, JdbcUtil, SparkInfoTransfer}
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging

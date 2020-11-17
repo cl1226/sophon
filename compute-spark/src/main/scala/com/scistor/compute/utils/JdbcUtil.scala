@@ -6,7 +6,7 @@ import java.util.{Calendar, Properties}
 import com.scistor.compute.model.remote.ConnectConfig
 import org.apache.commons.lang3.time.FastDateFormat
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
-import org.apache.spark.sql.types.{DateType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{DateType, LongType, StringType, StructField, StructType, TimestampType}
 
 class JdbcUtil(sparkSession: SparkSession, connectConfig: ConnectConfig) extends Serializable {
 
@@ -51,5 +51,50 @@ class JdbcUtil(sparkSession: SparkSession, connectConfig: ConnectConfig) extends
     val df = sparkSession.sql(s"""select max($colName) as res from $tableName""")
     val rows = df.take(1)
     rows(0).getAs[String]("res")
+  }
+
+  def writeIncrementalTime(datetime: String, transId: String, yarnId: String, stepId: String): Unit = {
+    val tableName = "t_compute_trans_incremental_timestamp"
+    val schema = StructType(
+      List(
+        StructField("transId", StringType, true),
+        StructField("yarnId", StringType, true),
+        StructField("stepId", StringType, true),
+        StructField("time", StringType, true)
+      )
+    )
+    val rows = new util.ArrayList[Row]()
+    rows.add(
+      Row(
+        transId,
+        yarnId,
+        stepId,
+        datetime
+      )
+    )
+    val df = sparkSession.createDataFrame(rows, schema)
+    df.write.mode(SaveMode.Append).jdbc(properties.getProperty("url"), tableName, properties)
+  }
+
+  def queryIncrementalTime(transId: String, yarnId: String, stepId: String): String = {
+    val query = s"select time from t_compute_trans_incremental_timestamp " +
+      s"where transId='${transId}'" +
+      s" and yarnId='${yarnId}'" +
+      s" and stepId='${stepId}'" +
+      s" order by time desc" +
+      s" limit 1"
+
+    val df = sparkSession.read
+      .format("jdbc")
+      .option("url", properties.getProperty("url"))
+      .option("dbtable", s"(${query}) a")
+      .option("user", properties.getProperty("user"))
+      .option("password", properties.getProperty("password"))
+      .load()
+    if (df.count() > 0) {
+      df.take(1)(0).getAs[String]("time")
+    } else {
+      "1970-01-01 00:00:00"
+    }
   }
 }

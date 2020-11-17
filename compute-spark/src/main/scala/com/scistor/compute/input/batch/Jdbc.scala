@@ -5,6 +5,7 @@ import java.util.Properties
 
 import com.scistor.compute.apis.BaseStaticInput
 import com.scistor.compute.model.remote.TransStepDTO
+import com.scistor.compute.utils.{JdbcUtil, SparkInfoTransfer}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 import scala.collection.JavaConversions._
@@ -77,6 +78,15 @@ class Jdbc extends BaseStaticInput {
       dataframe = sparkSession.read.jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, tuple._2, tuple._1)
     } else {
       dataframe = sparkSession.read.jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, tuple._1)
+    }
+    if (tuple._1.containsKey("now")) {
+      // 记录本次读取的时间
+      new JdbcUtil(sparkSession, SparkInfoTransfer.jobInfo.getMysqlConfig).writeIncrementalTime(
+        tuple._1.getProperty("now"),
+        config.getId,
+        config.getName,
+        config.getStepId
+      )
     }
     dataframe
   }
