@@ -1,7 +1,8 @@
 package com.scistor.compute.output.batch
 
-import java.text.SimpleDateFormat
+import java.text.{DateFormat, SimpleDateFormat}
 import java.util.Calendar
+import java.util
 
 import com.scistor.compute.apis.BaseOutput
 import com.scistor.compute.model.remote.TransStepDTO
@@ -34,7 +35,7 @@ abstract class FileOutputBase extends BaseOutput {
 
   protected def fileWriter(df: Dataset[Row]): DataFrameWriter[Row] = {
     val attrs = config.getStepAttributes
-    df.write.mode(attrs.get("format").toString.toLowerCase())
+    df.write.format(attrs.get("dataFormatType").toString.toLowerCase())
   }
 
   protected def buildPathWithDefaultSchema(uri: String, defaultUriSchema: String): String = {
@@ -56,21 +57,52 @@ abstract class FileOutputBase extends BaseOutput {
     })
     val writer = fileWriter(df)
     var path = buildPathWithDefaultSchema(attrs.get("connectAddress").toString, defaultUriSchema)
-    val format = attrs.get("format").toString.toLowerCase()
-    format match {
-      case "csv" => writer.option("delimiter", attrs.get("split").toString).mode(saveMode = SaveMode.Append).csv(path)
-      case "json" =>
-        val calendar = Calendar.getInstance()
-        val format = new SimpleDateFormat("yyyy-MM-dd")
-        calendar.add(Calendar.HOUR, -1)
+    val writeProps = attrs.get("write").asInstanceOf[util.Map[String, AnyRef]]
+    val hdfsRange = writeProps.getOrDefault("catalogPattern", "yyyyMMdd/timestamp/*").toString
+    var dateFormat: DateFormat = null
+    val calendar = Calendar.getInstance()
+    val res = hdfsRange.split("/").length match {
+      case 2 => {
+        val SP = "((.*)/(.*))".r
+        val SP(all, a, b) = hdfsRange.replace("*", "")
+        dateFormat = new SimpleDateFormat(a)
+        val now = dateFormat.format(calendar.getTime)
+        b match {
+          case "" => {
+            val date = dateFormat.format(calendar.getTime)
+            hdfsRange.replace(a, date).replace("*", "")
+          }
+          case _ => {
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            val timestamp = calendar.getTime.getTime.toString
+            hdfsRange.replace(a, now).replace(b, timestamp).replace("*", "")
+          }
+        }
+      }
+      case 3 => {
+        val SP = "((.*)/(.*)/(.*))".r
+        val SP(all, a, b, c) = hdfsRange.replace("*", "")
+        dateFormat = new SimpleDateFormat(a)
+        val now = dateFormat.format(calendar.getTime)
         calendar.set(Calendar.MINUTE, 0)
         calendar.set(Calendar.SECOND, 0)
         calendar.set(Calendar.MILLISECOND, 0)
-        val timestamp = calendar.getTime.getTime
-        val date = format.format(calendar.getTime)
-        path += "/" + date + "/" + timestamp
-        writer.mode(saveMode = SaveMode.Append).json(path)
-      case "parquet" => writer.mode(saveMode = SaveMode.Append).parquet(path)
+        val timestamp = calendar.getTime.getTime.toString
+        hdfsRange.replace(a, now).replace(b, timestamp).replace("*", "")
+      }
+    }
+
+    path = path + "/" + res
+
+    val saveMode = writeProps.getOrDefault("saveMode", "append").toString
+
+    val format = attrs.get("dataFormatType").toString.toLowerCase()
+    format match {
+      case "csv" => writer.option("delimiter", attrs.getOrDefault("separator", ",").toString).mode(saveMode).csv(path)
+      case "json" => writer.mode(saveMode).json(path)
+      case "parquet" => writer.mode(saveMode).parquet(path)
       case "text" => writer.text(path)
       case "orc" => writer.orc(path)
       case _ => writer.format(format).save(path)
