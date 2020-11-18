@@ -8,7 +8,7 @@ import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 import scala.collection.JavaConversions._
 
-class Elasticsearch extends BaseStaticInput {
+class Es extends BaseStaticInput {
 
   var config: TransStepDTO = _
 
@@ -30,12 +30,12 @@ class Elasticsearch extends BaseStaticInput {
    */
   override def validate(): (Boolean, String) = {
     val attrs = config.getStepAttributes
-    attrs.containsKey("hosts") && attrs.containsKey("index") && attrs.get("hosts").toString.size > 0 match {
+    attrs.containsKey("host") && attrs.containsKey("index") && attrs.get("host").toString.size > 0 match {
       case true => {
         // TODO CHECK hosts
         (true, "")
       }
-      case false => (false, "please specify [hosts] as a non-empty string list")
+      case false => (false, "please specify [host] as a non-empty string list")
     }
   }
 
@@ -49,10 +49,10 @@ class Elasticsearch extends BaseStaticInput {
     val index = attrs.getOrElse("index", "").toString
     val types = attrs.getOrElse("type", "").toString
 
-    val hosts = attrs.get("hosts").toString.split(":")(0)
-    val port = attrs.get("hosts").toString.split(",")(0).split(":")(1)
+    val host = attrs.get("host").toString
+    val port = attrs.get("port").toString
     val esOptions = new util.HashMap[String, String]
-    esOptions.put("es.nodes", hosts)
+    esOptions.put("es.nodes", host)
     esOptions.put("es.port", port)
     esOptions.put("es.index.read.missing.as.empty","true")
     esOptions.put("es.nodes.wan.only","true")

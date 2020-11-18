@@ -34,7 +34,7 @@ class Jdbc extends BaseStaticInput {
   override def validate(): (Boolean, String) = {
     val attrs = config.getStepAttributes
     if (!attrs.containsKey("connectUrl")) {
-      (false, s"please specify [connectUrl] in ${attrs.getOrElse("dataSourceType", "")} as a non-empty string")
+      (false, s"please specify [connectUrl] in ${config.getStepType} as a non-empty string")
     } else {
       (true, "")
     }
@@ -70,14 +70,18 @@ class Jdbc extends BaseStaticInput {
 
     var dataframe: Dataset[Row] = null
     val tuple = initProp(sparkSession, driver)
+    val dbtable = attrs.get("source").toString.indexOf("select") >= 0 match {
+      case true => s"(${attrs.get("source").toString}) as tmp"
+      case false => attrs.get("source").toString
+    }
     if (tuple._2 != null && tuple._2.length > 0) {
       println(s"[INFO] 输入数据源 <${config.getStepType}> partitioned rules: ")
       tuple._2.map(x => {
         println(s"\t$x")
       })
-      dataframe = sparkSession.read.jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, tuple._2, tuple._1)
+      dataframe = sparkSession.read.jdbc(attrs.get("connectUrl").toString, dbtable, tuple._2, tuple._1)
     } else {
-      dataframe = sparkSession.read.jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, tuple._1)
+      dataframe = sparkSession.read.jdbc(attrs.get("connectUrl").toString, dbtable, tuple._1)
     }
     if (tuple._1.containsKey("now")) {
       // 记录本次读取的时间

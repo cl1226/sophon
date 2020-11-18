@@ -40,8 +40,8 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
    */
   override def validate(): (Boolean, String) = {
     val attrs = config.getStepAttributes
-    if (!attrs.containsKey("host")) {
-      (false, s"please specify [connectUrl] in ${attrs.getOrElse("dataSourceType", "")} as a non-empty string")
+    if (!attrs.containsKey("serverAddress")) {
+      (false, s"please specify [serverAddress] in ${attrs.getOrElse("dataSourceType", "")} as a non-empty string")
     } else {
       (true, "")
     }

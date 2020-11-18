@@ -9,7 +9,7 @@ import org.elasticsearch.spark.sql._
 
 import scala.collection.JavaConversions._
 
-class Elasticsearch extends BaseOutput {
+class Es extends BaseOutput {
 
   var esCfg: Map[String, String] = Map()
   val esPrefix = "es."
@@ -33,12 +33,12 @@ class Elasticsearch extends BaseOutput {
    */
   override def validate(): (Boolean, String) = {
     val attrs = config.getStepAttributes
-    attrs.containsKey("hosts") && attrs.containsKey("index") && attrs.get("hosts").toString.length > 0 match {
+    attrs.containsKey("host") && attrs.containsKey("index") && attrs.get("host").toString.length > 0 match {
       case true => {
         // TODO CHECK hosts
         (true, "")
       }
-      case false => (false, "please specify [hosts] as a non-empty string list")
+      case false => (false, "please specify [host] as a non-empty string list")
     }
   }
 
@@ -53,7 +53,7 @@ class Elasticsearch extends BaseOutput {
     esCfg += ("index" -> attrs.get("index").toString)
     esCfg += ("index_type" -> attrs.getOrElse("type", "").toString)
     esCfg += ("index_time_format" -> "yyyy.MM.dd")
-    esCfg += ("es.nodes" -> attrs.get("hosts").toString.split(":")(0))
+    esCfg += ("es.nodes" -> attrs.get("host").toString)
 
     val extraProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     if (extraProps.containsKey("user")) {

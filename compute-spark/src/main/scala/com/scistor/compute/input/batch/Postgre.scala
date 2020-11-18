@@ -11,7 +11,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class Postgresql extends Jdbc {
+class Postgre extends Jdbc {
 
   override def getDataset(spark: SparkSession): Dataset[Row] = {
     jdbcReader(spark, "org.postgresql.Driver")

@@ -34,12 +34,8 @@ class Http extends BaseStaticInput {
   override def validate(): (Boolean, String) = {
     val attrs = config.getStepAttributes
     val extraProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
-    if (!attrs.containsKey("connectUrl")) {
-      (false, s"please specify [connectUrl] in ${attrs.get("dataSourceType")} as a non-empty string")
-    } else if (!extraProps.containsKey("user")) {
-      (false, s"please specify [user] in ${attrs.get("dataSourceType")} as a non-empty string")
-    } else if (!extraProps.containsKey("password")) {
-      (false, s"please specify [password] in ${attrs.get("dataSourceType")} as a non-empty string")
+    if (!attrs.containsKey("url")) {
+      (false, s"please specify [url] in ${config.getStepType} as a non-empty string")
     } else {
       (true, "")
     }
@@ -52,13 +48,13 @@ class Http extends BaseStaticInput {
     import spark.implicits._
     val attrs = config.getStepAttributes
 
-    val url = attrs.get("connectUrl").toString
+    val url = attrs.get("url").toString
     val response: http.HttpResponse[String] = Http(url).header("Accept", "application/json").timeout(10000, 1000).asString
     val result = response.body
 
     val ds = spark.createDataset(Seq(result))
 
-    val format = attrs.get("format").toString.toLowerCase()
+    val format = attrs.get("dataFormatType").toString.toLowerCase()
     val reader = spark.read.format(format)
 
     format match {

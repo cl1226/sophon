@@ -14,7 +14,7 @@ import org.postgresql.core.BaseConnection
 
 import scala.collection.JavaConversions._
 
-class Postgresql extends BaseOutput {
+class Postgre extends BaseOutput {
 
   var config: TransStepDTO = _
 
