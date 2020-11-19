@@ -6,6 +6,8 @@ import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types.{BooleanType, DoubleType, FloatType, IntegerType, LongType, StringType}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
+import scala.collection.JavaConversions.mapAsScalaMap
+
 class Convert extends BaseTransform {
 
   var config: TransStepDTO = _
@@ -24,6 +26,13 @@ class Convert extends BaseTransform {
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 转换算子 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val srcField = attrs.get("sourceField").toString
     val newType = attrs.get("newType").toString
 

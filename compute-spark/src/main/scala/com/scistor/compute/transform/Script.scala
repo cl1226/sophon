@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.ComputeProcess.{pipeLineProcess, processDynamicCode}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
+import scala.collection.JavaConversions.mapAsScalaMap
+
 class Script extends BaseTransform {
 
   var config: TransStepDTO =_
@@ -26,6 +28,13 @@ class Script extends BaseTransform {
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 转换算子 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     OperatorImplementMethod.get(attrs.get("implementMethod").toString) match {
       case OperatorImplementMethod.ScriptSql => {
         val sql = attrs.get("codeBlock").toString

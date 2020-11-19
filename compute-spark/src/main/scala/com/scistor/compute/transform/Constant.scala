@@ -1,11 +1,13 @@
 package com.scistor.compute.transform
 
 import java.util
+
 import com.scistor.compute.apis.BaseTransform
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.functions.lit
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
+import scala.collection.JavaConversions.mapAsScalaMap
 import scala.collection.JavaConverters._
 
 /**
@@ -30,6 +32,13 @@ class Constant extends BaseTransform {
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     var finalDF = df
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 转换算子 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val constantMap = attrs.get("constantMap").asInstanceOf[util.Map[String, AnyRef]]
     constantMap.asScala.foreach(attr => {
       finalDF = finalDF.withColumn(attr._1, lit(attr._2))
