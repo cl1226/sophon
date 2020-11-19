@@ -12,6 +12,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
+import org.apache.spark.sql.types.ComputeDataType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import scalaj.http
@@ -323,7 +324,7 @@ object SparkJobStarter extends Logging {
 
       config.getInputFields.foreach(out => {
         if (ds.columns.contains(out.getStreamFieldName)) {
-          if (!out.getConstant) ds = ds.withColumn(out.getFieldName, ds.col(out.getStreamFieldName))
+          if (!out.getConstant) ds = ds.withColumn(out.getFieldName, ds.col(out.getStreamFieldName).cast(ComputeDataType.fromStructField(out.getFieldType)))
           else ds = ds.withColumn(out.getFieldName, new Column(out.getConstantValue))
         }
       })
