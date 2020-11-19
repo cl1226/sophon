@@ -22,14 +22,16 @@ class Join extends BaseTransform {
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     val attrs = config.getStepAttributes
-    val sourceTableName = attrs.get("sourceTableName").toString
-    val targetTableName = attrs.get("targetTableName").toString
-    val joinField: Seq[String] = attrs.get("joinField").toString.split(",").toSeq
-    val joinType = attrs.getOrDefault("joinType", "inner").toString
-    val sourceDF = spark.read.table(sourceTableName)
-    val targetDF = spark.read.table(targetTableName)
-    val df = sourceDF.join(targetDF, joinField, joinType)
-    df
+    val sql = attrs.get("sql").toString
+    val res = spark.sql(sql)
+//    val sourceTableName = attrs.get("sourceTableName").toString
+//    val targetTableName = attrs.get("targetTableName").toString
+//    val joinField: Seq[String] = attrs.get("joinField").toString.split(",").toSeq
+//    val joinType = attrs.getOrDefault("joinType", "inner").toString
+//    val sourceDF = spark.read.table(sourceTableName)
+//    val targetDF = spark.read.table(targetTableName)
+//    val df = sourceDF.join(targetDF, joinField, joinType)
+    res
   }
 
   /**
@@ -37,14 +39,35 @@ class Join extends BaseTransform {
    */
   override def validate(): (Boolean, String) = {
     val attrs = config.getStepAttributes
-    if (!attrs.containsKey("sourceTableName")) {
-      (false, "please specify [sourceTableName] as a non-empty string")
-    } else if (!attrs.containsKey("targetTableName")) {
-      (false, "please specify [targetTableName] as a non-empty string")
-    } else if(!attrs.containsKey("joinField")) {
-      (false, "please specify [joinField] as a non-empty string")
-    } else {
-      (true, "")
+    attrs.containsKey("sql") && attrs.get("sql").toString.length > 0 match {
+      case true => {
+        val code = attrs.get("sql").toString
+        val sparkSession = SparkSession.builder.getOrCreate
+        val logicalPlan = sparkSession.sessionState.sqlParser.parsePlan(code)
+        if (!logicalPlan.resolved) {
+          val logicPlanStr = logicalPlan.toString
+          logicPlanStr.toLowerCase.contains("unresolvedrelation") match {
+            case true => (true, "")
+            case false => {
+              val msg = "config[sql] cannot be passed through sql parser, sql[" + code + "], logicPlan: \n" + logicPlanStr
+              (false, msg)
+
+            }
+          }
+        } else {
+          (true, "")
+        }
+      }
+      case false => (false, "please specify [join sql] as a non-empty string")
     }
+    //    if (!attrs.containsKey("sourceTableName")) {
+//      (false, "please specify [sourceTableName] as a non-empty string")
+//    } else if (!attrs.containsKey("targetTableName")) {
+//      (false, "please specify [targetTableName] as a non-empty string")
+//    } else if(!attrs.containsKey("joinField")) {
+//      (false, "please specify [joinField] as a non-empty string")
+//    } else {
+//      (true, "")
+//    }
   }
 }

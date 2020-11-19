@@ -66,7 +66,7 @@ class Script extends BaseTransform {
     val attrs = config.getStepAttributes
     val code = config.getStepAttributes.get("codeBlock").toString
     if (StringUtils.isBlank(code)) {
-      (false, "please specify [script] as string")
+      (false, "please specify [script] as a non-empty string")
     } else {
       OperatorImplementMethod.get(attrs.get("implementMethod").toString) match {
         case OperatorImplementMethod.ScriptSql => {
