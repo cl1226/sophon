@@ -49,11 +49,6 @@ object SparkJobStarter extends Logging {
 
     SparkInfoTransfer.transfer(info)
 
-    val sparkConf = createSparkConf()
-    val spark = SparkSession.builder().config(sparkConf).enableHiveSupport().getOrCreate()
-    val sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
-
     entrypoint()
 
   }
@@ -67,7 +62,10 @@ object SparkJobStarter extends Logging {
       println("\t" + key + " => " + value)
     })
 
-    val sparkSession = SparkSession.builder.config(sparkConf).getOrCreate()
+    val builder = SparkSession.builder.config(sparkConf)
+    if (SparkInfoTransfer.enableHiveSupport) builder.enableHiveSupport()
+    val sparkSession = builder.getOrCreate()
+    sparkSession.sparkContext.setLogLevel("ERROR")
 
     // find all user defined UDFs and register in application init
     UdfRegister.findAndRegisterUdfs(sparkSession)

@@ -23,6 +23,8 @@ object SparkInfoTransfer extends Logging {
   var jobInfo: SparkTransDTO = _
   // redis config
   var jedis: JedisClient = _
+  // enableHiveSupport
+  var enableHiveSupport: Boolean = false
 
   def transfer(info: SparkTransDTO): Unit = {
     this.jobInfo = info
@@ -39,6 +41,9 @@ object SparkInfoTransfer extends Logging {
                   streamingInputs = streamingInputs + (step.getStepInfo.getName -> step.getStepInfo)
                 }
                 case _ => {
+                  if (step.getStepInfo.getStepType.equals("hive")) {
+                    enableHiveSupport = true
+                  }
                   step.getStepInfo.setStrategy(info.getStrategy)
                   staticInputs = staticInputs + (step.getStepInfo.getName -> step.getStepInfo)
                 }
