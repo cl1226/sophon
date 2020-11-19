@@ -56,10 +56,10 @@ class Es extends BaseOutput {
     esCfg += ("es.nodes" -> attrs.get("host").toString)
 
     val extraProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
-    if (extraProps.containsKey("user")) {
+    if (extraProps != null && extraProps.containsKey("user")) {
       esCfg += ("es.net.http.auth.user" -> extraProps.get("user").toString)
     }
-    if (extraProps.containsKey("password")) {
+    if (extraProps != null && extraProps.containsKey("password")) {
       esCfg += ("es.net.http.auth.user" -> extraProps.get("password").toString)
     }
 

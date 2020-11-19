@@ -62,10 +62,10 @@ class Es extends BaseStaticInput {
     esOptions.put("es.mapping.date.rich", "false") //不解析date直接返回string
 
     val extraProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
-    if (extraProps.containsKey("user")) {
+    if (extraProps != null && extraProps.containsKey("user")) {
       esOptions.put("es.net.http.auth.user", extraProps.get("user").toString) //访问es的用户名
     }
-    if (extraProps.containsKey("password")) {
+    if (extraProps != null && extraProps.containsKey("password")) {
       esOptions.put("es.net.http.auth.pass", extraProps.get("password").toString) //访问es的用户名
     }
 

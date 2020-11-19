@@ -49,7 +49,7 @@ object SparkJobStarter extends Logging {
     SparkInfoTransfer.transfer(info)
 
     val sparkConf = createSparkConf()
-    val spark = SparkSession.builder().config(sparkConf).getOrCreate()
+    val spark = SparkSession.builder().config(sparkConf).enableHiveSupport().getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
