@@ -25,18 +25,18 @@ class Ftp extends BaseStaticInput {
    */
   override def validate(): (Boolean, String) = {
     val attrs = config.getStepAttributes
-    attrs.containsKey("url") match {
+    attrs.containsKey("path") match {
       case true => {
         (true, "")
       }
-      case false => (false, "please specify [url] as a non-empty string")
+      case false => (false, "please specify [path] as a non-empty string")
     }
-    attrs.containsKey("format") match {
-      case true => {
-        (true, "")
-      }
-      case false => (false, "please specify [format] as a of [text, json, csv]")
-    }
+//    attrs.containsKey("dataFormatType") match {
+//      case true => {
+//        (true, "")
+//      }
+//      case false => (false, "please specify [format] as a of [text, json, csv]")
+//    }
   }
 
   /**
@@ -44,7 +44,12 @@ class Ftp extends BaseStaticInput {
    * */
   override def getDataset(spark: SparkSession): Dataset[Row] = {
     val attrs = config.getStepAttributes
-    val path = buildPathWithDefaultSchema(attrs.get("url").toString, "file://")
+    val username = attrs.get("username").toString
+    val password = attrs.get("password").toString
+    val url = attrs.get("host").toString
+    val port = attrs.get("port").toString
+    val directory = attrs.get("path").toString
+    val path = buildPathWithDefaultSchema(s"ftp://${username}:${password}@${url}:${port}${directory}", "file://")
 //    val path = buildPathWithDefaultSchema("ftp://ftpuser:123456@192.168.31.219:21/home/ftpuser/abc/param.csv", "file://")
     fileReader(spark, path)
   }
@@ -63,8 +68,9 @@ class Ftp extends BaseStaticInput {
     import spark.implicits._
 
     val value = spark.sparkContext.wholeTextFiles(path)
+    value.foreach(println)
 
-    val format = attrs.get("format").toString.toLowerCase()
+    val format = attrs.get("dataFormatType").toString.toLowerCase()
     val reader = spark.read.format(format)
 
     format match {
