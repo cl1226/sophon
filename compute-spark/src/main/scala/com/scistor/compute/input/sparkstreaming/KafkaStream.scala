@@ -5,10 +5,9 @@ import java.util.Properties
 import com.scistor.compute.apis.BaseStreamingInput
 import com.scistor.compute.input.sparkstreaming.kafkaStreamProcess.{AvroStreamProcess, CsvStreamProcess, JsonStreamProcess}
 import com.scistor.compute.model.remote.TransStepDTO
-import com.scistor.compute.model.spark.{DecodeType, SinkAttribute, SourceAttribute}
+import com.scistor.compute.model.spark.DecodeType
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSchemaUtil.parseStructType
 import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Dataset, Row, RowFactory, SparkSession}
 import org.apache.spark.streaming.StreamingContext
@@ -17,7 +16,7 @@ import org.apache.spark.streaming.kafka010.{CanCommitOffsets, ConsumerStrategies
 
 import scala.collection.JavaConversions._
 
-class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
+class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, AnyRef]]{
 
   var config: TransStepDTO = _
 
@@ -53,16 +52,17 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
     val attrs = config.getStepAttributes
 
     val props = new Properties()
-    props.setProperty("format", "json")
+    props.setProperty("format", attrs.getOrDefault("dataFormatType", "json").toString)
     props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
     props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
     props.setProperty("bootstrap.servers", attrs.getOrDefault("serverAddress", "").toString)
     props.setProperty("group.id", attrs.getOrDefault("groupid", "").toString)
     props.setProperty("enable.auto.commit", "false")
 
-    if (attrs.containsKey("kerberos") && attrs.getOrElse("kerberos", "").toString.equals("true")){
+    if (attrs.containsKey("kerberosCertification") && attrs.getOrElse("kerberosCertification", "").toString.equals("true")){
       props.setProperty("security.protocol", "SASL_PLAINTEXT")
       props.setProperty("sasl.kerberos.service.name", "kafka")
+      System.setProperty("java.security.auth.login.config", "./sparkkafkajaas.conf")
     }
 
     println("[INFO] 输入数据源 <kafka> properties: ")
@@ -77,10 +77,10 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
 
   }
 
-  override def getDStream(ssc: StreamingContext): DStream[ConsumerRecord[String, String]] = {
+  override def getDStream(ssc: StreamingContext): DStream[ConsumerRecord[String, AnyRef]] = {
     val attrs = config.getStepAttributes
     val topics = attrs.get("topic").toString.split(",").toSet
-    val inputDStream : InputDStream[ConsumerRecord[String, String]] = KafkaUtils.createDirectStream(
+    val inputDStream : InputDStream[ConsumerRecord[String, AnyRef]] = KafkaUtils.createDirectStream(
       ssc,
       LocationStrategies.PreferConsistent,
       ConsumerStrategies.Subscribe(topics, kafkaParams))
@@ -123,7 +123,7 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, String]]{
     })
   }
 
-  override def rdd2dataset(spark: SparkSession, rdd: RDD[ConsumerRecord[String, String]]): Dataset[Row] = {
+  override def rdd2dataset(spark: SparkSession, rdd: RDD[ConsumerRecord[String, AnyRef]]): Dataset[Row] = {
 
     val transformedRDD = rdd.map(record => {
       (record.topic(), record.value())

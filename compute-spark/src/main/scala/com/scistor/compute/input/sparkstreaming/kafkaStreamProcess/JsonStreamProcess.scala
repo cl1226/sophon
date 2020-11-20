@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 class JsonStreamProcess(config: TransStepDTO) extends KafkaStream {
 
-  override def rdd2dataset(spark: SparkSession, rdd: RDD[ConsumerRecord[String, String]]): Dataset[Row] = {
+  override def rdd2dataset(spark: SparkSession, rdd: RDD[ConsumerRecord[String, AnyRef]]): Dataset[Row] = {
 
     val structFields = mutable.ArrayBuffer[StructField]()
     config.getOutputFields.foreach(output => {
@@ -21,7 +21,7 @@ class JsonStreamProcess(config: TransStepDTO) extends KafkaStream {
     val schema = DataTypes.createStructType(structFields.toArray)
 
     val transformedRDD = rdd.map(record => {
-      record.value()
+      record.value().toString
     })
 
     import spark.implicits._

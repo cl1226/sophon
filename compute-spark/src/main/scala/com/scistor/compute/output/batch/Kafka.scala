@@ -51,9 +51,10 @@ class Kafka extends BaseOutput {
     props.setProperty("bootstrap.servers", attrs.get("serverAddress").toString)
     props.setProperty("group.id", attrs.get("groupid").toString)
 
-    if (attrs.containsKey("kerberos") && attrs.get("kerberos").toString.equals("true")){
+    if (attrs.containsKey("kerberosCertification") && attrs.getOrDefault("kerberosCertification", "").toString.equals("true")){
       props.setProperty("security.protocol", "SASL_PLAINTEXT")
       props.setProperty("sasl.kerberos.service.name", "kafka")
+      System.setProperty("java.security.auth.login.config", "./sparkkafkajaas.conf")
     }
 
     println("[INFO] Kafka Output properties: ")
