@@ -19,6 +19,7 @@ class JdbcUtil(sparkSession: SparkSession, connectConfig: ConnectConfig) extends
   properties.setProperty("url", connectConfig.getConnection_url)
   properties.setProperty("user", connectConfig.getUser_name)
   properties.setProperty("password", connectConfig.getPassword)
+  properties.setProperty("driver", "com.mysql.cj.jdbc.Driver")
 
   def writeDataCount(output: String, input: String, taskname: String): Unit = {
     if(!output.equals("0") || !input.equals("0")){
