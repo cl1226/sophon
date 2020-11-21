@@ -1,5 +1,6 @@
 package com.scistor.compute.output.batch
 
+import java.util
 import java.util.Properties
 
 import com.scistor.compute.apis.BaseOutput
@@ -43,6 +44,7 @@ class Kafka extends BaseOutput {
   override def prepare(spark: SparkSession): Unit = {
     super.prepare(spark)
     val attrs = config.getStepAttributes
+    val extraProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
 
     val props = new Properties()
     props.setProperty("format", "json")
@@ -52,12 +54,13 @@ class Kafka extends BaseOutput {
     props.setProperty("group.id", attrs.get("groupid").toString)
 
     if (attrs.containsKey("kerberosCertification") && attrs.getOrDefault("kerberosCertification", "").toString.equals("true")){
-      props.setProperty("security.protocol", "SASL_PLAINTEXT")
-      props.setProperty("sasl.kerberos.service.name", attrs.getOrDefault("sasl.kerberos.service.name", "kafka").toString)
+      props.setProperty("security.protocol", extraProps.getOrDefault("security.protocol", "PLAINTEXT").toString)
+      props.setProperty("sasl.mechanism", extraProps.getOrDefault("sasl.mechanism", "GSSAPI").toString)
+      props.setProperty("sasl.kerberos.service.name", extraProps.getOrDefault("sasl.kerberos.service.name", "kafka").toString)
       System.setProperty("java.security.auth.login.config", "./sparkkafkajaas.conf")
     }
 
-    println("[INFO] Kafka Output properties: ")
+    println("[INFO] 输出数据源 <kafka> properties: ")
     props.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

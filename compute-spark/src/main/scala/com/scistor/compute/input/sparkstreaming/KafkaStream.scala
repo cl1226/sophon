@@ -1,5 +1,6 @@
 package com.scistor.compute.input.sparkstreaming
 
+import java.util
 import java.util.Properties
 
 import com.scistor.compute.apis.BaseStreamingInput
@@ -50,6 +51,7 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, AnyRef]]{
     super.prepare(spark)
 
     val attrs = config.getStepAttributes
+    val extraProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
 
     val props = new Properties()
     props.setProperty("format", attrs.getOrDefault("dataFormatType", "json").toString)
@@ -60,8 +62,9 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, AnyRef]]{
     props.setProperty("enable.auto.commit", "false")
 
     if (attrs.containsKey("kerberosCertification") && attrs.getOrElse("kerberosCertification", "").toString.equals("true")){
-      props.setProperty("security.protocol", "SASL_PLAINTEXT")
-      props.setProperty("sasl.kerberos.service.name", attrs.getOrDefault("sasl.kerberos.service.name", "kafka").toString)
+      props.setProperty("security.protocol", extraProps.getOrDefault("security.protocol", "PLAINTEXT").toString)
+      props.setProperty("sasl.mechanism", extraProps.getOrDefault("sasl.mechanism", "GSSAPI").toString)
+      props.setProperty("sasl.kerberos.service.name", extraProps.getOrDefault("sasl.kerberos.service.name", "kafka").toString)
       System.setProperty("java.security.auth.login.config", "./sparkkafkajaas.conf")
     }
 

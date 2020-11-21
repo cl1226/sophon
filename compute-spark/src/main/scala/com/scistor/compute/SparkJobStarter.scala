@@ -1,6 +1,7 @@
 package com.scistor.compute
 
 import java.io.File
+import java.util
 
 import com.alibaba.fastjson.JSON
 import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput, BaseTransform, Plugin}
@@ -135,7 +136,7 @@ object SparkJobStarter extends Logging {
                                  ): Unit = {
     val info = SparkInfoTransfer.jobInfo
     jobName = sparkSession.sparkContext.getConf.get("spark.app.name", SparkInfoTransfer.jobName)
-    val duration: Long = info.getStepList.get(0).getStepInfo.getStepAttributes.asScala.getOrElse("batchDuration", 10).toString.toLong
+    val duration: Long = info.getStepList.get(0).getStepInfo.getStepAttributes.get("properties").asInstanceOf[util.Map[String, AnyRef]].getOrDefault("batchDuration", "10").toString.toLong
     val ssc = new StreamingContext(sparkSession.sparkContext, Seconds(duration))
 
     basePrepare(sparkSession, staticInputs, streamingInputs, outputs)
