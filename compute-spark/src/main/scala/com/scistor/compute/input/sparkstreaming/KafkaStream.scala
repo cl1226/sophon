@@ -61,7 +61,7 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, AnyRef]]{
 
     if (attrs.containsKey("kerberosCertification") && attrs.getOrElse("kerberosCertification", "").toString.equals("true")){
       props.setProperty("security.protocol", "SASL_PLAINTEXT")
-      props.setProperty("sasl.kerberos.service.name", "kafka")
+      props.setProperty("sasl.kerberos.service.name", attrs.getOrDefault("sasl.kerberos.service.name", "kafka").toString)
       System.setProperty("java.security.auth.login.config", "./sparkkafkajaas.conf")
     }
 
