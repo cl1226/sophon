@@ -1,0 +1,264 @@
+  <configuration  xmlns:xi="http://www.w3.org/2001/XInclude">
+    
+    <property>
+      <name>fs.azure.user.agent.prefix</name>
+      <value>User-Agent: APN/1.0 Hortonworks/1.0 HDP/None</value>
+    </property>
+    
+    <property>
+      <name>fs.defaultFS</name>
+      <value>hdfs://scistor12:8020</value>
+      <final>true</final>
+    </property>
+    
+    <property>
+      <name>fs.gs.application.name.suffix</name>
+      <value> (GPN:Hortonworks; version 1.0) HDP/None</value>
+    </property>
+    
+    <property>
+      <name>fs.gs.path.encoding</name>
+      <value>uri-path</value>
+    </property>
+    
+    <property>
+      <name>fs.gs.working.dir</name>
+      <value>/</value>
+    </property>
+    
+    <property>
+      <name>fs.s3a.fast.upload</name>
+      <value>true</value>
+    </property>
+    
+    <property>
+      <name>fs.s3a.fast.upload.buffer</name>
+      <value>disk</value>
+    </property>
+    
+    <property>
+      <name>fs.s3a.multipart.size</name>
+      <value>67108864</value>
+    </property>
+    
+    <property>
+      <name>fs.s3a.user.agent.prefix</name>
+      <value>User-Agent: APN/1.0 Hortonworks/1.0 HDP/None</value>
+    </property>
+    
+    <property>
+      <name>fs.trash.interval</name>
+      <value>360</value>
+    </property>
+    
+    <property>
+      <name>ha.failover-controller.active-standby-elector.zk.op.retries</name>
+      <value>120</value>
+    </property>
+    
+    <property>
+      <name>ha.zookeeper.acl</name>
+      <value>sasl:nn:rwcda</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.authentication.kerberos.keytab</name>
+      <value>/etc/security/keytabs/spnego.service.keytab</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.authentication.kerberos.principal</name>
+      <value>HTTP/_HOST@HADOOP.COM</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.authentication.signature.secret.file</name>
+      <value>/etc/security/http_secret</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.authentication.simple.anonymous.allowed</name>
+      <value>false</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.authentication.type</name>
+      <value>kerberos</value>
+      <final>true</final>
+    </property>
+    
+    <property>
+      <name>hadoop.http.cross-origin.allowed-headers</name>
+      <value>X-Requested-With,Content-Type,Accept,Origin,WWW-Authenticate,Accept-Encoding,Transfer-Encoding</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.cross-origin.allowed-methods</name>
+      <value>GET,PUT,POST,OPTIONS,HEAD,DELETE</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.cross-origin.allowed-origins</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.cross-origin.max-age</name>
+      <value>1800</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.filter.initializers</name>
+      <value>org.apache.hadoop.security.AuthenticationFilterInitializer,org.apache.hadoop.security.HttpCrossOriginFilterInitializer</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.ambari-server-bigdata.groups</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.ambari-server-bigdata.hosts</name>
+      <value>scistor12</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.hdfs.groups</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.hdfs.hosts</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.hive.groups</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.hive.hosts</name>
+      <value>scistor12,scistor18,scistor21</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.HTTP.groups</name>
+      <value>users</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.livy.groups</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.livy.hosts</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.yarn.groups</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.yarn.hosts</name>
+      <value>scistor18</value>
+    </property>
+    
+    <property>
+      <name>hadoop.rpc.protection</name>
+      <value>authentication,privacy</value>
+    </property>
+    
+    <property>
+      <name>hadoop.security.auth_to_local</name>
+      <value>RULE:[1:$1@$0](ambari-qa-bigdata@HADOOP.COM)s/.*/ambari-qa/
+RULE:[1:$1@$0](hbase-bigdata@HADOOP.COM)s/.*/hbase/
+RULE:[1:$1@$0](hdfs-bigdata@HADOOP.COM)s/.*/hdfs/
+RULE:[1:$1@$0](spark-bigdata@HADOOP.COM)s/.*/spark/
+RULE:[1:$1@$0](yarn-ats-bigdata@HADOOP.COM)s/.*/yarn-ats/
+RULE:[1:$1@$0](.*@HADOOP.COM)s/@.*//
+RULE:[2:$1@$0](activity_analyzer@HADOOP.COM)s/.*/activity_analyzer/
+RULE:[2:$1@$0](activity_explorer@HADOOP.COM)s/.*/activity_explorer/
+RULE:[2:$1@$0](amshbase@HADOOP.COM)s/.*/ams/
+RULE:[2:$1@$0](amsmon@HADOOP.COM)s/.*/ams/
+RULE:[2:$1@$0](amszk@HADOOP.COM)s/.*/ams/
+RULE:[2:$1@$0](dn@HADOOP.COM)s/.*/hdfs/
+RULE:[2:$1@$0](hbase@HADOOP.COM)s/.*/hbase/
+RULE:[2:$1@$0](hive@HADOOP.COM)s/.*/hive/
+RULE:[2:$1@$0](jhs@HADOOP.COM)s/.*/mapred/
+RULE:[2:$1@$0](nm@HADOOP.COM)s/.*/yarn/
+RULE:[2:$1@$0](nn@HADOOP.COM)s/.*/hdfs/
+RULE:[2:$1@$0](rangeradmin@HADOOP.COM)s/.*/ranger/
+RULE:[2:$1@$0](rangertagsync@HADOOP.COM)s/.*/rangertagsync/
+RULE:[2:$1@$0](rangerusersync@HADOOP.COM)s/.*/rangerusersync/
+RULE:[2:$1@$0](rm@HADOOP.COM)s/.*/yarn/
+RULE:[2:$1@$0](spark@HADOOP.COM)s/.*/spark/
+RULE:[2:$1@$0](yarn@HADOOP.COM)s/.*/yarn/
+RULE:[2:$1@$0](yarn-ats-hbase@HADOOP.COM)s/.*/yarn-ats/
+DEFAULT</value>
+    </property>
+    
+    <property>
+      <name>hadoop.security.authentication</name>
+      <value>kerberos</value>
+    </property>
+    
+    <property>
+      <name>hadoop.security.authorization</name>
+      <value>true</value>
+    </property>
+    
+    <property>
+      <name>hadoop.security.instrumentation.requires.admin</name>
+      <value>false</value>
+    </property>
+    
+    <property>
+      <name>io.compression.codecs</name>
+      <value>org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.SnappyCodec</value>
+    </property>
+    
+    <property>
+      <name>io.file.buffer.size</name>
+      <value>131072</value>
+    </property>
+    
+    <property>
+      <name>io.serializations</name>
+      <value>org.apache.hadoop.io.serializer.WritableSerialization</value>
+    </property>
+    
+    <property>
+      <name>ipc.client.connect.max.retries</name>
+      <value>50</value>
+    </property>
+    
+    <property>
+      <name>ipc.client.connection.maxidletime</name>
+      <value>30000</value>
+    </property>
+    
+    <property>
+      <name>ipc.client.idlethreshold</name>
+      <value>8000</value>
+    </property>
+    
+    <property>
+      <name>ipc.server.tcpnodelay</name>
+      <value>true</value>
+    </property>
+    
+    <property>
+      <name>mapreduce.jobtracker.webinterface.trusted</name>
+      <value>false</value>
+    </property>
+    
+    <property>
+      <name>net.topology.script.file.name</name>
+      <value>/etc/hadoop/conf/topology_script.py</value>
+    </property>
+    
+  </configuration>

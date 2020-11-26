@@ -58,6 +58,7 @@ class Kafka extends BaseOutput {
       props.setProperty("sasl.mechanism", extraProps.getOrDefault("sasl.mechanism", "GSSAPI").toString)
       props.setProperty("sasl.kerberos.service.name", extraProps.getOrDefault("sasl.kerberos.service.name", "kafka").toString)
       System.setProperty("java.security.auth.login.config", "./sparkkafkajaas.conf")
+      System.setProperty("java.security.krb5.conf", "./krb5.conf")
     }
 
     println("[INFO] 输出数据源 <kafka> properties: ")
