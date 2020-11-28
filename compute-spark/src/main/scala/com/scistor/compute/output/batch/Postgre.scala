@@ -8,6 +8,7 @@ import java.util.Properties
 
 import com.scistor.compute.apis.BaseOutput
 import com.scistor.compute.model.remote.TransStepDTO
+import com.scistor.compute.output.utils.jdbc.BatchInsertUtil
 import org.apache.spark.sql.{Dataset, Row}
 import org.postgresql.copy.CopyManager
 import org.postgresql.core.BaseConnection
@@ -76,7 +77,7 @@ class Postgre extends BaseOutput {
       conn = DriverManager.getConnection(attrs.get("connectUrl").toString, prop)
 
       val copyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
-      val tableName = definedProps.get("tableName").toString
+      val tableName = attrs.get("source").toString
       val cmd = s"COPY $tableName ($str) from STDIN DELIMITER ','"
       println(s"copy cmd: $cmd")
       val count = copyManager.copyIn(cmd, genPipedInputStream(data))
@@ -117,6 +118,15 @@ class Postgre extends BaseOutput {
         })
 
         df.write.mode(saveMode).jdbc(attrs.get("connectUrl").toString, attrs.get("source").toString, prop)
+      }
+      case "insert" => {
+        val tableName = config.getStepAttributes.get("source").toString
+        val prop: Properties = new Properties
+        prop.setProperty("dialect", attrs.getOrElse("connectUrl", "").toString)
+        prop.setProperty("driver", "com.huawei.gauss200.jdbc.Driver")
+        prop.setProperty("user", definedProps.getOrElse("user", "").toString)
+        prop.setProperty("password", definedProps.getOrElse("password", "").toString)
+        BatchInsertUtil.saveDFtoDBUsePool(prop, tableName, df)
       }
       case "copy" => {
         println("copy into gaussdb...")
