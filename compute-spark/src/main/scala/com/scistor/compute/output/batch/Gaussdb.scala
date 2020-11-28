@@ -112,7 +112,7 @@ class Gaussdb extends BaseOutput {
 
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
     val writeProps = attrs.get("write").asInstanceOf[util.Map[String, AnyRef]]
-    val saveType = writeProps.getOrDefault("saveType", "jdbc")
+    val saveType = writeProps.getOrDefault("saveType", "insert")
 
     saveType match {
       case "jdbc" => {

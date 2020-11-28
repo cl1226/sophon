@@ -123,7 +123,7 @@ class Postgre extends BaseOutput {
         val tableName = config.getStepAttributes.get("source").toString
         val prop: Properties = new Properties
         prop.setProperty("dialect", attrs.getOrElse("connectUrl", "").toString)
-        prop.setProperty("driver", "com.huawei.gauss200.jdbc.Driver")
+        prop.setProperty("driver", "org.postgresql.Driver")
         prop.setProperty("user", definedProps.getOrElse("user", "").toString)
         prop.setProperty("password", definedProps.getOrElse("password", "").toString)
         BatchInsertUtil.saveDFtoDBUsePool(prop, tableName, df)
