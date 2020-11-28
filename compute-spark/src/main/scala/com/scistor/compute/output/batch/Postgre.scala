@@ -61,7 +61,7 @@ class Postgre extends BaseOutput {
     in
   }
 
-  def copyIn(data: Array[Row]): Long = {
+  def copyIn(data: Array[Row], str: String): Long = {
     val attrs = config.getStepAttributes
     var conn: Connection = null
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
@@ -77,7 +77,7 @@ class Postgre extends BaseOutput {
 
       val copyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
       val tableName = definedProps.get("tableName").toString
-      val cmd = s"COPY $tableName from STDIN DELIMITER ','"
+      val cmd = s"COPY $tableName ($str) from STDIN DELIMITER ','"
       println(s"copy cmd: $cmd")
       val count = copyManager.copyIn(cmd, genPipedInputStream(data))
       count
@@ -124,8 +124,9 @@ class Postgre extends BaseOutput {
         df.schema.foreach(col => {
           columns.append(s""""${col.name}"""").append(",")
         })
+        val str = columns.toString().substring(0, columns.toString().length - 1)
         df.rdd.mapPartitions(x => {
-          copyIn(x.toArray)
+          copyIn(x.toArray, str)
           x
         }).count()
       }
