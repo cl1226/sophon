@@ -11,11 +11,13 @@ object BatchInsertUtil {
     val colNumbers = resultDateFrame.columns.length
     val sql = getInsertSql(tableName, resultDateFrame.columns)
     val columnDataTypes = resultDateFrame.schema.fields.map(_.dataType)
+    val batchSize = prop.getProperty("batchSize").toInt
 
     resultDateFrame.foreachPartition(partitionRecords => {
       val conn = DBPoolManager.getDBPoolManager(prop).getConnection
       val prepareStatement = conn.prepareStatement(sql)
       val metaData = conn.getMetaData.getColumns(null, "%", tableName, "%")
+      var count = 0
       try {
         conn.setAutoCommit(false)
         partitionRecords.foreach(record => {
@@ -43,6 +45,11 @@ object BatchInsertUtil {
             }
           }
           prepareStatement.addBatch()
+          count = count + 1
+          if (count > 0 && (count % batchSize == 0)) {
+            prepareStatement.executeBatch()
+            conn.commit()
+          }
         })
         prepareStatement.executeBatch()
         conn.commit()

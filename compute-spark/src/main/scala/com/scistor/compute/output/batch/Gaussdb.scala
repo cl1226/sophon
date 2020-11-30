@@ -136,6 +136,7 @@ class Gaussdb extends BaseOutput {
         prop.setProperty("driver", "com.huawei.gauss200.jdbc.Driver")
         prop.setProperty("user", definedProps.getOrElse("user", "").toString)
         prop.setProperty("password", definedProps.getOrElse("password", "").toString)
+        prop.setProperty("batchSize", definedProps.getOrElse("batchSize", "5000").toString)
         BatchInsertUtil.saveDFtoDBUsePool(prop, tableName, df)
       }
       case "copy" => {

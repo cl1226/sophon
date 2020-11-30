@@ -78,7 +78,7 @@ class Postgre extends BaseOutput {
 
       val copyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
       val tableName = attrs.get("source").toString
-      val cmd = s"COPY $tableName ($str) from STDIN DELIMITER ','"
+      val cmd = s"COPY $tableName ($str) from STDIN DELIMITER AS '&^&', null '', ignore_extra_data 'true', EOL '#^#', compatible_illegal_chars 'true'"
       println(s"copy cmd: $cmd")
       val count = copyManager.copyIn(cmd, genPipedInputStream(data))
       count
@@ -126,6 +126,7 @@ class Postgre extends BaseOutput {
         prop.setProperty("driver", "org.postgresql.Driver")
         prop.setProperty("user", definedProps.getOrElse("user", "").toString)
         prop.setProperty("password", definedProps.getOrElse("password", "").toString)
+        prop.setProperty("batchSize", definedProps.getOrElse("batchSize", "5000").toString)
         BatchInsertUtil.saveDFtoDBUsePool(prop, tableName, df)
       }
       case "copy" => {
