@@ -68,10 +68,11 @@ class File extends BaseStaticInput {
       case "parquet" => reader.parquet(path)
       case "json" => {
         var df = reader.option("mode", "PERMISSIVE").json(path)
-        config.getOutputFields.foreach(output => {
-          val dataType = ComputeDataType.fromStructField(output.getFieldType.toLowerCase())
-          df = df.withColumn(output.getStreamFieldName, col(output.getStreamFieldName).cast(dataType))
-        })
+        // 去掉hdfs数据源的类型转换，由于字段较多，设置输出参数比较麻烦
+//        config.getOutputFields.foreach(output => {
+//          val dataType = ComputeDataType.fromStructField(output.getFieldType.toLowerCase())
+//          df = df.withColumn(output.getStreamFieldName, col(output.getStreamFieldName).cast(dataType))
+//        })
         df
       }
       case "orc" => reader.orc(path)

@@ -136,10 +136,9 @@ class Postgre extends BaseOutput {
           columns.append(s""""${col.name}"""").append(",")
         })
         val str = columns.toString().substring(0, columns.toString().length - 1)
-        df.rdd.mapPartitions(x => {
-          copyIn(x.toArray, str)
-          x
-        }).count()
+        df.foreachPartition(part => {
+          copyIn(part.toArray, str)
+        })
       }
     }
   }
