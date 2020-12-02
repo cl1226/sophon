@@ -86,13 +86,14 @@ class Script extends BaseTransform {
             (true, "")
           }
         }
-        case _ => {
+        case OperatorImplementMethod.ScriptJava | OperatorImplementMethod.ScriptScala => {
           if (!attrs.containsKey("methodName") || attrs.get("methodName").equals("")) {
             (false, s"please specify ${config.getStepType} [methodName] as string")
           } else {
             (true, "")
           }
         }
+        case _ => (true, "")
       }
     }
   }
