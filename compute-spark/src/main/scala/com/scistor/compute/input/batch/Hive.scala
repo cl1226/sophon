@@ -4,6 +4,8 @@ import com.scistor.compute.apis.BaseStaticInput
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
+import scala.collection.JavaConversions._
+
 class Hive extends BaseStaticInput {
 
   var config: TransStepDTO = _
@@ -38,6 +40,13 @@ class Hive extends BaseStaticInput {
    **/
   override def getDataset(spark: SparkSession): Dataset[Row] = {
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val table = attrs.get("source").toString
     spark.sql(s"select * from ${table}")
   }

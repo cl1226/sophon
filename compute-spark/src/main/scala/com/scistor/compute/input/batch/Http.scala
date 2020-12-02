@@ -48,6 +48,12 @@ class Http extends BaseStaticInput {
     import spark.implicits._
     val attrs = config.getStepAttributes
 
+    println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val url = attrs.get("url").toString
     val response: http.HttpResponse[String] = Http(url).header("Accept", "application/json").timeout(10000, 1000).asString
     val result = response.body
