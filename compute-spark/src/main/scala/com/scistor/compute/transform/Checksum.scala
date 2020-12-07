@@ -5,6 +5,8 @@ import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.functions.{col, crc32, md5, sha1}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
+import scala.collection.JavaConversions.mapAsScalaMap
+
 class Checksum extends BaseTransform {
 
   var config: TransStepDTO = _
@@ -23,6 +25,13 @@ class Checksum extends BaseTransform {
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 转换算子 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val srcField = attrs.get("sourceField").toString
     val column = attrs.get("method").toString.toUpperCase match {
       case "SHA1" => sha1(col(srcField))

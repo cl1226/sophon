@@ -4,9 +4,9 @@ import com.scistor.compute.apis.BaseTransform
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
-import scala.collection.JavaConversions.mapAsScalaMap
+import scala.collection.JavaConversions._
 
-class Sample extends BaseTransform {
+class Deduplication extends BaseTransform {
 
   var config: TransStepDTO = _
 
@@ -31,11 +31,7 @@ class Sample extends BaseTransform {
       println("\t" + key + " = " + value)
     })
 
-    val sampleDF = df.sample(true, attrs.get("fraction").asInstanceOf[Double])
-    attrs.get("limit").asInstanceOf[Int] match {
-      case -1 => sampleDF
-      case limit: Int => sampleDF.limit(limit)
-    }
+    df.dropDuplicates(attrs.get("source_field").toString)
   }
 
   /**
@@ -43,11 +39,10 @@ class Sample extends BaseTransform {
    */
   override def validate(): (Boolean, String) = {
     val attrs = config.getStepAttributes
-    (attrs.containsKey("fraction")
-      && attrs.containsKey("limit")
-      && (attrs.get("fraction").asInstanceOf[Double] > 0.0))match {
-      case true => (true, "")
-      case false => (false, "please specify [fraction] as Double > 0 and [limit] as Integer")
+    if (attrs.containsKey("source_field")) {
+      (true, "")
+    } else {
+      (false, "please specify [source_field]")
     }
   }
 }

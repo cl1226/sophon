@@ -29,6 +29,13 @@ class Batchfilter extends BaseTransform {
     import spark.implicits._
 
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 转换算子 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val response: http.HttpResponse[String] = Http(attrs.get("fileUrl").toString).header("Accept", "application/json").timeout(10000, 1000).asString
     val result = response.body
 

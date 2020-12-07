@@ -4,6 +4,8 @@ import com.scistor.compute.apis.BaseTransform
 import com.scistor.compute.model.remote.TransStepDTO
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
+import scala.collection.JavaConversions.mapAsScalaMap
+
 class Join extends BaseTransform {
 
   var config: TransStepDTO = _
@@ -22,6 +24,13 @@ class Join extends BaseTransform {
 
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     val attrs = config.getStepAttributes
+
+    println(s"[INFO] 转换算子 <${config.getStepType}> properties: ")
+    attrs.foreach(entry => {
+      val (key, value) = entry
+      println("\t" + key + " = " + value)
+    })
+
     val sql = attrs.get("sql").toString
     val res = spark.sql(sql)
 //    val sourceTableName = attrs.get("sourceTableName").toString
