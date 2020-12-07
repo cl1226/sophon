@@ -87,6 +87,7 @@ class JdbcUtil(sparkSession: SparkSession, connectConfig: ConnectConfig) extends
 
     val df = sparkSession.read
       .format("jdbc")
+      .option("driver", "com.mysql.cj.jdbc.Driver")
       .option("url", properties.getProperty("url"))
       .option("dbtable", s"(${query}) a")
       .option("user", properties.getProperty("user"))

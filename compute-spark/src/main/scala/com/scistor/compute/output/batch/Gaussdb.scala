@@ -56,7 +56,11 @@ class Gaussdb extends BaseOutput {
           println("input data has " + columncount + " columns")
           val begin = System.currentTimeMillis()
           for (i <- 0 to rowcount-1; j <- 0 to columncount-1) {
-            out.write((arr(i)(j) + (if (j == columncount-1) "#^#" else "&^&")).getBytes(StandardCharsets.UTF_8))
+            var value = (arr(i)(j) + "").replaceAll("""\n|\t|\r\n""", "").replaceAll("null", "\\N")
+            if (value.endsWith("\\")) {
+              value = value.substring(0, value.length - 1)
+            }
+            out.write((value + (if (j == columncount-1) "#^#" else "&^&")).getBytes(StandardCharsets.UTF_8))
           }
           val end = System.currentTimeMillis()
           println(s"write into pipedinputstream cost time: ${end-begin}")
