@@ -12,6 +12,7 @@
         <module>compute-common</module>
         <module>compute-spark</module>
         <module>compute-example</module>
+        <module>compute-monitor</module>
     </modules>
 
     <properties>
