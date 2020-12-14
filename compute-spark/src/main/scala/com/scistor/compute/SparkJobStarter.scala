@@ -50,7 +50,14 @@ object SparkJobStarter extends Logging {
 
     SparkInfoTransfer.transfer(info)
 
-    entrypoint()
+    Try(entrypoint()) match {
+      case Success(_) => {}
+      case Failure(exception) => {
+        exception match {
+          case e: Exception => showRuntimeError(e)
+        }
+      }
+    }
 
   }
 
@@ -257,6 +264,14 @@ object SparkJobStarter extends Logging {
 
   private[scistor] def showScistorAsciiLogo(): Unit = {
     AsciiArt.printAsciiArt("Scistor")
+  }
+
+  private[scistor] def showRuntimeError(throwable: Throwable): Unit = {
+    println("\n\n==================================\n\n")
+    println("Runtime Error, reason:\n")
+    throwable.printStackTrace(System.out)
+    println("\n====================================\n\n\n")
+    throw new RuntimeException(throwable)
   }
 
   private[scistor] def basePrepare(sparkSession: SparkSession, plugins: List[Plugin]*): Unit = {
