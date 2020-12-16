@@ -43,7 +43,7 @@ class Postgre extends Jdbc {
               for(i <- 0 until numPartitions){
                 arr.append(i)
               }
-              predicates = arr.map(i=>{s"SHA1($partColumnName)%$numPartitions = $i"}).toArray
+              predicates = arr.map(i=>{s"$partColumnName%$numPartitions = $i"}).toArray
             }
             (prop, predicates)
           }
