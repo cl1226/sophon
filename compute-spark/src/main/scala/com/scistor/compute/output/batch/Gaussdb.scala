@@ -90,7 +90,7 @@ class Gaussdb extends BaseOutput {
       conn = DriverManager.getConnection(attrs.get("connectUrl").toString, prop)
       val copyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
       val tableName = attrs.get("source").toString
-      val cmd = s"COPY $tableName ($str) from stdin with(format 'text', ignore_extra_data 'true', DELIMITER '&^&', EOL '#^#', compatible_illegal_chars 'true')"
+      val cmd = s"COPY $tableName ($str) from stdin with(format 'text', ignore_extra_data 'true', DELIMITER '&^&', EOL '#^#', escaping 'true', compatible_illegal_chars 'true')"
       println(s"copy cmd: $cmd")
       val count = copyManager.copyIn(cmd, genPipedInputStream(data))
       count
