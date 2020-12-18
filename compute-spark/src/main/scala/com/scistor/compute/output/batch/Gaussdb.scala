@@ -56,7 +56,12 @@ class Gaussdb extends BaseOutput {
           println("input data has " + columncount + " columns")
           val begin = System.currentTimeMillis()
           for (i <- 0 to rowcount-1; j <- 0 to columncount-1) {
-            var value = (arr(i)(j) + "").replaceAll("""\n|\t|\r\n""", "").replaceAll("null", "\\N")
+            var value = (value == null) match {
+              case true => "\\N"
+              case false => {
+                (arr(i)(j) + "").replaceAll("[\\r|\\n]", "")
+              }
+            }
             if (value.endsWith("\\")) {
               value = value.substring(0, value.length - 1)
             }
@@ -78,31 +83,19 @@ class Gaussdb extends BaseOutput {
     val attrs = config.getStepAttributes
     var conn: Connection = null
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
-    try {
-      println(s"gaussdb url: ${attrs.get("connectUrl").toString}")
-
-      val prop = new Properties
-      for ((k, v) <- definedProps) {
-        prop.setProperty(k, v.toString)
-      }
-      prop.setProperty("driver", "com.huawei.gauss200.jdbc.Driver")
-
-      conn = DriverManager.getConnection(attrs.get("connectUrl").toString, prop)
-      val copyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
-      val tableName = attrs.get("source").toString
-      val cmd = s"COPY $tableName ($str) from stdin with(format 'text', ignore_extra_data 'true', DELIMITER '&^&', EOL '#^#', escaping 'true', compatible_illegal_chars 'true')"
-      println(s"copy cmd: $cmd")
-      val count = copyManager.copyIn(cmd, genPipedInputStream(data))
-      count
-    } catch {
-      case ex: SQLException => ex.printStackTrace(); 0
-    } finally {
-      try {
-        if (conn != null) conn.close()
-      } catch {
-        case ex: SQLException => println(ex.getMessage())
-      }
+    val prop = new Properties
+    for ((k, v) <- definedProps) {
+      prop.setProperty(k, v.toString)
     }
+    prop.setProperty("driver", "com.huawei.gauss200.jdbc.Driver")
+    conn = DriverManager.getConnection(attrs.get("connectUrl").toString, prop)
+
+    val copyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
+    val tableName = attrs.get("source").toString
+
+    val cmd = s"COPY $tableName ($str) from stdin with(format 'text', ignore_extra_data 'true', DELIMITER '&^&', EOL '#^#', escaping 'true', compatible_illegal_chars 'true')"
+    println(s"copy cmd: $cmd")
+    copyManager.copyIn(cmd, genPipedInputStream(data))
   }
 
   def process(df: DataFrame): Unit = {
