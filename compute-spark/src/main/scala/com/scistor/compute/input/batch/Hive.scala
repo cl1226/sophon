@@ -41,7 +41,7 @@ class Hive extends BaseStaticInput {
   override def getDataset(spark: SparkSession): Dataset[Row] = {
     val attrs = config.getStepAttributes
 
-    println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")
+    println(s"[INFO] 输入数据源 [${config.getStepType}] properties: ")
     attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

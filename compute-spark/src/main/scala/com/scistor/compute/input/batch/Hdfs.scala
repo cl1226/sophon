@@ -35,7 +35,7 @@ class Hdfs extends File {
     val strategy = config.getStrategy
 
     if (strategy != null) {
-      println(s"[INFO] 任务 <${config.getName}> properties: ")
+      println(s"[INFO] 任务 [${config.getName}] properties: ")
       println(s"\t执行模式=${strategy.getRunMode}")
       println(s"\t时间单位=${strategy.getTimeUnit}")
     }

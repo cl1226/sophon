@@ -33,7 +33,7 @@ class Constant extends BaseTransform {
     var finalDF = df
     val attrs = config.getStepAttributes
 
-    println(s"[INFO] 转换算子 <${config.getStepType}> properties: ")
+    println(s"[INFO] 转换算子 [${config.getStepType}] properties: ")
     attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

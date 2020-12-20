@@ -55,14 +55,14 @@ class Jdbc extends BaseStaticInput {
     val strategy = config.getStrategy
 
     if (strategy != null) {
-      println(s"[INFO] 任务 <${config.getName}> properties: ")
+      println(s"[INFO] 任务 [${config.getName}] properties: ")
       println(s"\t执行模式=${strategy.getRunMode}")
       println(s"\t时间单位=${strategy.getTimeUnit}")
     }
 
     val attrs = config.getStepAttributes
 
-    println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")
+    println(s"[INFO] 输入数据源 [${config.getStepType}] properties: ")
     attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)
@@ -75,7 +75,7 @@ class Jdbc extends BaseStaticInput {
       case false => attrs.get("source").toString
     }
     if (tuple._2 != null && tuple._2.length > 0) {
-      println(s"[INFO] 输入数据源 <${config.getStepType}> partitioned rules: ")
+      println(s"[INFO] 输入数据源 [${config.getStepType}] partitioned rules: ")
       tuple._2.map(x => {
         println(s"\t$x")
       })

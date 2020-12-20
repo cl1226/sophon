@@ -27,7 +27,7 @@ class Convert extends BaseTransform {
   override def process(spark: SparkSession, df: Dataset[Row]): Dataset[Row] = {
     val attrs = config.getStepAttributes
 
-    println(s"[INFO] 转换算子 <${config.getStepType}> properties: ")
+    println(s"[INFO] 转换算子 [${config.getStepType}] properties: ")
     attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

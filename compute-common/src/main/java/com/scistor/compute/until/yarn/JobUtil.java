@@ -16,21 +16,22 @@ public class JobUtil {
 
     private ExecuteShellUtil executeShellUtil = ExecuteShellUtil.getInstance();
 
-    public static void main(String[] args) {
-        String jobName = "写入postgresql模型_admin_0edd206c8a124aa285d7126cce1865f9";
+    public static void main(String[] args) throws Exception {
+        String jobName = "堆叠任务模型_ec2b94a033db4e8e8e4c3904a223b119";
         JobUtil jobUtil = new JobUtil();
+        jobUtil.killApplication(jobName);
 
-        String jobStatus = "";
-        String jobErrLog = "";
-        try {
-            jobStatus = jobUtil.getJobStatus(jobName);
-            jobErrLog = jobUtil.getJobErrLog(jobName);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("jobStatus = " + jobStatus);
-        System.out.println("jobErrLog = " + jobErrLog);
+//        String jobStatus = "";
+//        String jobErrLog = "";
+//        try {
+//            jobStatus = jobUtil.getJobStatus(jobName);
+//            jobErrLog = jobUtil.getJobErrLog(jobName);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//        System.out.println("jobStatus = " + jobStatus);
+//        System.out.println("jobErrLog = " + jobErrLog);
     }
 
     public JobUtil() {
@@ -106,6 +107,17 @@ public class JobUtil {
         String res = executeShellUtil.execCmd(cmd);
 
         return res;
+    }
+
+    /**
+     * kill yarn application by application id
+     */
+    public void killApplication(String jobName) throws Exception {
+        String application_id = getApplicationId(jobName);
+        String cmd = prop.getProperty("kill_job_command").replaceAll("application_id", application_id);
+        System.out.println(cmd);
+        executeShellUtil.init("192.168.31.77", 22, "root", "123456");
+        executeShellUtil.execCmd(cmd);
     }
 
 }

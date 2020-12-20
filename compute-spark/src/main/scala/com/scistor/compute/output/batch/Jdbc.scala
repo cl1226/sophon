@@ -34,7 +34,7 @@ class Jdbc extends BaseOutput {
 
   override def process(df: Dataset[Row]): Unit = {
     val attrs = config.getStepAttributes
-    println(s"[INFO] 输出数据源 <${config.getStepType}> properties: ")
+    println(s"[INFO] 输出数据源 [${config.getStepType}] properties: ")
     attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

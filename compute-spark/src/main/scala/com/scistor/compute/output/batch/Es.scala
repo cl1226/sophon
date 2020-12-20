@@ -63,7 +63,7 @@ class Es extends BaseOutput {
       esCfg += ("es.net.http.auth.user" -> extraProps.get("password").toString)
     }
 
-    println("[INFO] Output ElasticSearch Params:")
+    println("[INFO] Output [ElasticSearch] Params:")
     for (entry <- esCfg) {
       val (key, value) = entry
       println("\t" + key + " = " + value)

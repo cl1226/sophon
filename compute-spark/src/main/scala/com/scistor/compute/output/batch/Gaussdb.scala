@@ -56,10 +56,10 @@ class Gaussdb extends BaseOutput {
           println("input data has " + columncount + " columns")
           val begin = System.currentTimeMillis()
           for (i <- 0 to rowcount-1; j <- 0 to columncount-1) {
-            var value = (value == null) match {
+            var value = (arr(i)(j) == null) match {
               case true => "\\N"
               case false => {
-                (arr(i)(j) + "").replaceAll("[\\r|\\n]", "")
+                (arr(i)(j) + "").replaceAll("[\\r|\\n]", " ")
               }
             }
             if (value.endsWith("\\")) {
@@ -101,7 +101,7 @@ class Gaussdb extends BaseOutput {
   def process(df: DataFrame): Unit = {
     val attrs = config.getStepAttributes
 
-    println(s"[INFO] 输出数据源 <${config.getStepType}> properties: ")
+    println(s"[INFO] 输出数据源 [${config.getStepType}] properties: ")
     attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

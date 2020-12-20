@@ -54,7 +54,7 @@ class File extends BaseStaticInput {
   protected def fileReader(spark: SparkSession, path: String): Dataset[Row] = {
     val attrs = config.getStepAttributes
 
-    println(s"[INFO] 输入数据源 <${config.getStepType}> properties: ")
+    println(s"[INFO] 输入数据源 [${config.getStepType}] properties: ")
     attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

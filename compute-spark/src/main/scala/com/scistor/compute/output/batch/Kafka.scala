@@ -61,7 +61,7 @@ class Kafka extends BaseOutput {
       System.setProperty("java.security.krb5.conf", "./krb5.conf")
     }
 
-    println("[INFO] 输出数据源 <kafka> properties: ")
+    println("[INFO] 输出数据源 [kafka] properties: ")
     props.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)

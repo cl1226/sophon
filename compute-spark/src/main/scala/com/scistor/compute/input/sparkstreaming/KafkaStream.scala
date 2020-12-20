@@ -69,7 +69,7 @@ class KafkaStream extends BaseStreamingInput[ConsumerRecord[String, AnyRef]]{
       System.setProperty("java.security.krb5.conf", "./krb5.conf")
     }
 
-    println("[INFO] 输入数据源 <kafka> properties: ")
+    println("[INFO] 输入数据源 [kafka] properties: ")
     props.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)
