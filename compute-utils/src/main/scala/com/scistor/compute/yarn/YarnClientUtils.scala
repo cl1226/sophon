@@ -51,20 +51,26 @@ class YarnClientUtils {
     var finalJobStatus = ""
     val application_id = getApplicationIdByJobName(jobName)
 
-    val cmd = prop.getProperty("get_job_status").replaceAll("application_id", application_id)
-    val res = runShellBlock(cmd, prop.getProperty("prefix", ""))
-    val p = Pattern.compile(prop.getProperty("get_job_status_reg"))
-    val matcher: Matcher = p.matcher(res)
-    if (matcher.find) jobStatus = matcher.group(prop.getProperty("get_job_status_reg_group").toInt)
-
-    val p2 = Pattern.compile(prop.getProperty("get_job_final_status_reg"))
-    val matcher2: Matcher = p2.matcher(res)
-    if (matcher2.find) finalJobStatus = matcher2.group(prop.getProperty("get_job_status_reg_group").toInt)
     val map = new util.HashMap[String, String]()
-    map.put("Status", jobStatus)
-    map.put("FinalStatus", finalJobStatus)
-    map.put("id", application_id)
-    map
+
+    !"".equals(application_id) match {
+      case true => {
+        val cmd = prop.getProperty("get_job_status").replaceAll("application_id", application_id)
+        val res = runShellBlock(cmd, prop.getProperty("prefix", ""))
+        val p = Pattern.compile(prop.getProperty("get_job_status_reg"))
+        val matcher: Matcher = p.matcher(res)
+        if (matcher.find) jobStatus = matcher.group(prop.getProperty("get_job_status_reg_group").toInt)
+
+        val p2 = Pattern.compile(prop.getProperty("get_job_final_status_reg"))
+        val matcher2: Matcher = p2.matcher(res)
+        if (matcher2.find) finalJobStatus = matcher2.group(prop.getProperty("get_job_status_reg_group").toInt)
+        map.put("Status", jobStatus)
+        map.put("FinalStatus", finalJobStatus)
+        map.put("id", application_id)
+        map
+      }
+      case false => map
+    }
   }
 
   def getApplicationLogsByJobName(jobName: String): String = {
@@ -89,6 +95,9 @@ class YarnClientUtils {
     runShell(cmd, prop.getProperty("prefix", ""))
   }
 
+}
+
+object YarnClientUtils {
   def main(args: Array[String]): Unit = {
     val properties = new Properties
     properties.load(this.getClass.getResourceAsStream("/yarn_cmd.properties"))

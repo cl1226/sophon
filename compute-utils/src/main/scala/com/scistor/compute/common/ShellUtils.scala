@@ -20,12 +20,23 @@ object ShellUtils {
       case "" => command
       case _ => s"$prefix && $command"
     }
-    Process(cmd).run(new ComputeProcessLogger)
+    cmd.indexOf("ssh") >= 0 match {
+      case true => Process(cmd).run(new ComputeProcessLogger)
+      case false => {
+        val cmd2 = Array("/bin/sh", "-c", cmd)
+        Runtime.getRuntime.exec(cmd2)
+      }
+    }
   }
 
   def runShellBlock(command: String, prefix: String): String = {
-    prefix match {
-      case "" => {
+    val cmd: String = prefix match {
+      case "" => command
+      case _ => s"$prefix $command"
+    }
+    cmd.indexOf("ssh") >= 0 match {
+      case true => Process(cmd).!!(new ComputeProcessLogger)
+      case false => {
         val cmds = Array("/bin/sh", "-c", command)
         val process = Runtime.getRuntime.exec(cmds)
         process.waitFor()
@@ -38,13 +49,9 @@ object ShellUtils {
           stringBuffer.append(buffer, 0, bytes_read)
           bytes_read = reader.read(buffer)
         }
+        println(s"result: ${stringBuffer.toString}")
         stringBuffer.toString
       }
-      case _ => {
-        Process(s"$prefix && $command").!!(new ComputeProcessLogger)
-      }
     }
-
   }
-
 }
