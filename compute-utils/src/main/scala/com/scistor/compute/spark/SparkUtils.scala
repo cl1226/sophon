@@ -4,7 +4,18 @@ import java.util.Properties
 
 object SparkUtils {
 
-  def init(properties: Properties): Unit = {
+  private val sparkCommand = new SparkCommand;
+
+  def init(properties: Properties) = {
+    sparkCommand.init(properties)
+    this
+  }
+
+  def build(jobName: String): Unit = {
+
+  }
+
+  def submit(): Unit = {
 
   }
 
