@@ -2,6 +2,7 @@ package com.scistor.compute.common
 
 import java.io.InputStreamReader
 import scala.sys.process._
+import scala.util.{Failure, Success, Try}
 
 class ComputeProcessLogger extends ProcessLogger {
   override def out(s: => String): Unit = {
@@ -34,8 +35,15 @@ object ShellUtils {
       case "" => command
       case _ => s"$prefix $command"
     }
+    var res = ""
     cmd.indexOf("ssh") >= 0 match {
-      case true => Process(cmd).!!(new ComputeProcessLogger)
+      case true => {
+        Try(res = Process(cmd).!!(new ComputeProcessLogger)) match {
+          case Success(value) => res
+          case Failure(exception) => ""
+        }
+
+      }
       case false => {
         val cmds = Array("/bin/sh", "-c", command)
         val process = Runtime.getRuntime.exec(cmds)
@@ -49,7 +57,6 @@ object ShellUtils {
           stringBuffer.append(buffer, 0, bytes_read)
           bytes_read = reader.read(buffer)
         }
-        println(s"result: ${stringBuffer.toString}")
         stringBuffer.toString
       }
     }

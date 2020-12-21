@@ -31,7 +31,6 @@ class YarnClientUtils {
         // http/https restful
       }
     }
-
     resultMap
   }
 
@@ -91,8 +90,10 @@ class YarnClientUtils {
 
   def killApplicationByJobName(jobName: String): Unit = {
     val application_id = getApplicationIdByJobName(jobName)
-    val cmd = prop.getProperty("kill_job_command").replaceAll("application_id", application_id)
-    runShell(cmd, prop.getProperty("prefix", ""))
+    if (!"".equals(application_id)) {
+      val cmd = prop.getProperty("kill_job_command").replaceAll("application_id", application_id)
+      runShell(cmd, prop.getProperty("prefix", ""))
+    }
   }
 
 }
