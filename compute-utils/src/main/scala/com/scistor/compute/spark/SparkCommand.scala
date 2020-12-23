@@ -22,6 +22,13 @@ class SparkCommand {
   var driverMemory: String = _
   var executorMemory: String = _
   var executorCores: String = _
+  var executorInstances: String = _
+  var master: String = _
+  var deployMode: String = _
+  var queue: String = _
+  var args: String = _
+  var maxAppAttempts: String = _
+  var waitAppCompletion: String = _
 
   var sparkClientHost: String = _
   var sparkClientUser: String = _
@@ -46,11 +53,15 @@ class SparkCommand {
     this.driverMemory = properties.getProperty("driver.memory")
     this.executorMemory = properties.getProperty("executor.memory")
     this.executorCores = properties.getProperty("executor.cores")
+    this.executorInstances = properties.getProperty("executor.instances")
     this.sparkClientHost = properties.getProperty("remote.address.host")
     this.sparkClientUser = properties.getProperty("remote.address.user")
     this.sparkClientPort = properties.getProperty("remote.address.ssh.port")
     this.kafkaJaasConf = properties.getProperty("jaas.yarn.config")
     this.javaJaasConf = properties.getProperty("huawei.rest.jaas")
+    this.master = properties.getProperty("master")
+    this.deployMode = properties.getProperty("deployMode")
+    this.args = properties.getProperty("args")
   }
 
 }

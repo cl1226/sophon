@@ -19,7 +19,7 @@ object ShellUtils {
   def runShell(command: String, prefix: String): Unit = {
     val cmd: String = prefix match {
       case "" => command
-      case _ => s"$prefix && $command"
+      case _ => s"$prefix $command"
     }
     cmd.indexOf("ssh") >= 0 match {
       case true => Process(cmd).run(new ComputeProcessLogger)
@@ -35,10 +35,10 @@ object ShellUtils {
       case "" => command
       case _ => s"$prefix $command"
     }
-    var res = ""
+    var res: String = ""
     cmd.indexOf("ssh") >= 0 match {
       case true => {
-        Try(res = Process(cmd).!!(new ComputeProcessLogger)) match {
+        Try{res = Process(cmd).!!(new ComputeProcessLogger)} match {
           case Success(value) => res
           case Failure(exception) => ""
         }
