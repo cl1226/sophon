@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets
 import java.sql.{Connection, DriverManager, SQLException}
 import java.util
 import java.util.Properties
-
 import com.huawei.gauss200.jdbc.copy.CopyManager
 import com.huawei.gauss200.jdbc.core.BaseConnection
 import com.scistor.compute.apis.BaseOutput
@@ -15,7 +14,7 @@ import org.apache.spark.sql.{DataFrame, Row}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 class Gaussdb extends BaseOutput {
 
@@ -79,10 +78,11 @@ class Gaussdb extends BaseOutput {
     in
   }
 
-  def copyIn(data: Array[Row], str: String): Long = {
+  def copyIn(data: Array[Row], str: String): Unit = {
     val attrs = config.getStepAttributes
     var conn: Connection = null
     val definedProps = attrs.get("properties").asInstanceOf[util.Map[String, AnyRef]]
+    val batchSize: Int = Integer.valueOf(definedProps.getOrDefault("batchSize", "700000").toString)
     val prop = new Properties
     for ((k, v) <- definedProps) {
       prop.setProperty(k, v.toString)
@@ -95,7 +95,16 @@ class Gaussdb extends BaseOutput {
 
     val cmd = s"COPY $tableName ($str) from stdin with(format 'text', ignore_extra_data 'true', DELIMITER '&^&', EOL '#^#', escaping 'true', compatible_illegal_chars 'true')"
     println(s"copy cmd: $cmd")
-    copyManager.copyIn(cmd, genPipedInputStream(data))
+    var list = new ArrayBuffer[Row]()
+    data.foreach(d => {
+      list += d
+      if (list.length >= batchSize) {
+        copyManager.copyIn(cmd, genPipedInputStream(data))
+      }
+    })
+    if (list.length > 0) {
+      copyManager.copyIn(cmd, genPipedInputStream(data))
+    }
   }
 
   def process(df: DataFrame): Unit = {
