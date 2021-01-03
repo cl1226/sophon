@@ -62,6 +62,9 @@ class SparkCommand {
     this.master = properties.getProperty("master")
     this.deployMode = properties.getProperty("deployMode")
     this.args = properties.getProperty("args")
+    this.queue = properties.getProperty("queue")
+    this.maxAppAttempts = properties.getProperty("maxAppAttempts")
+    this.waitAppCompletion = properties.getProperty("waitAppCompletion")
   }
 
 }

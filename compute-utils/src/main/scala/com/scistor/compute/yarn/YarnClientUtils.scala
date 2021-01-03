@@ -1,7 +1,12 @@
 package com.scistor.compute.yarn
 
 import com.scistor.compute.common.ShellUtils._
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.yarn.api.records.YarnApplicationState
+import org.apache.hadoop.yarn.client.api.YarnClient
+import org.apache.hadoop.yarn.conf.YarnConfiguration
 
+import java.net.{URI, URL}
 import java.util.Properties
 import java.util.regex.{Matcher, Pattern}
 import java.util
@@ -28,7 +33,40 @@ class YarnClientUtils {
         })
       }
       case _ => {
-        // http/https restful
+        // yarn client api
+        val yarnSitePath = prop.getProperty("yarn_site_path")
+        val conf = new YarnConfiguration()
+        conf.addResource(new Path(URI.create(yarnSitePath)))
+        val yarnClient = YarnClient.createYarnClient()
+        yarnClient.init(conf)
+        yarnClient.start()
+        val applications = yarnClient.getApplications(util.EnumSet.of(
+          YarnApplicationState.ACCEPTED,
+          YarnApplicationState.RUNNING,
+          YarnApplicationState.FINISHED,
+          YarnApplicationState.FAILED,
+          YarnApplicationState.KILLED))
+        val apps = applications.asScala.filter(app => {
+          jobNames.contains(app.getName)
+        })
+
+        jobNames.asScala.foreach(job => {
+          val app = apps.filter(_.getName.equals(job)).toArray
+          val map = new util.HashMap[String, String]()
+          if (app.length > 0) {
+            map.put("Status", app(0).getYarnApplicationState.name())
+            map.put("FinalStatus", app(0).getFinalApplicationStatus.name())
+            map.put("id", app(0).getApplicationId.toString)
+            map.put("yarnId", app(0).getName)
+            resultMap.put(app(0).getName, map)
+          } else {
+            map.put("Status", "")
+            map.put("FinalStatus", "")
+            map.put("id", "")
+            map.put("yarnId", "")
+            resultMap.put(job, map)
+          }
+        })
       }
     }
     resultMap
@@ -105,11 +143,7 @@ object YarnClientUtils {
     val yarnUtils = new YarnClientUtils(properties)
 
     val array: util.ArrayList[String] = new util.ArrayList[String](5)
-    array.add("循环3_6685ef06474f493e9e6001c966475b27")
-    array.add("循环1_0ac3284b41ee4199bbadcff6ece7ae35")
-    array.add("循环2_3e711af8a81248be8f826d91fc9cdae0")
-    array.add("循环5_58bf5158493a454db8eddfeb48576b68")
-    array.add("循环4_af2c7be2758e472d9bcb92ceead8c48c")
+    array.add("内置算子模型2_93b085cd64834153bd1318c78351261b")
 
     val resultMap = yarnUtils.getApplicationStatusByArray(array)
     resultMap.asScala.foreach(println)
