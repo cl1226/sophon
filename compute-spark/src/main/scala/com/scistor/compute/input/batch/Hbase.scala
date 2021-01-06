@@ -36,7 +36,8 @@ class Hbase extends BaseStaticInput {
 //    config.set(HConstants.ZOOKEEPER_QUORUM, source.connection_url.split(":")(0))
 //    config.set(HConstants.ZOOKEEPER_CLIENT_PORT, source.connection_url.split(":")(1))
 //    config.set(org.apache.hadoop.hbase.mapreduce.TableInputFormat.INPUT_TABLE, source.table_name)
-
+    spark.read.format("jdbc")
+      .option("driver", "org.apache.phoenix.jdbc.PhoenixDriver")
     var df: Dataset[Row] = null
     df
   }

@@ -33,14 +33,15 @@ class SparkCommand {
   var sparkClientHost: String = _
   var sparkClientUser: String = _
   var sparkClientPort: String = _
+  var sparkClientPwd: String = _
 
   var kafkaJaasConf: String = _
   var javaJaasConf: String = _
 
   def init(properties: Properties): Unit = {
-    this.appResource = properties.getProperty("appResource")
+    this.appResource = properties.getProperty("app.resource")
     this.appName = properties.getProperty("appName")
-    this.mainClass = properties.getProperty("mainClass")
+    this.mainClass = properties.getProperty("main.class")
     this.logDir = properties.getProperty("log.dir")
     this.yarnRM1 = properties.getProperty("yarn.rm1")
     this.yarnRM2 = properties.getProperty("yarn.rm2")
@@ -56,12 +57,13 @@ class SparkCommand {
     this.executorInstances = properties.getProperty("executor.instances")
     this.sparkClientHost = properties.getProperty("remote.address.host")
     this.sparkClientUser = properties.getProperty("remote.address.user")
-    this.sparkClientPort = properties.getProperty("remote.address.ssh.port")
+    this.sparkClientPort = properties.getProperty("remote.address.port")
+    this.sparkClientPwd = properties.getProperty("remote.address.password")
     this.kafkaJaasConf = properties.getProperty("jaas.yarn.config")
     this.javaJaasConf = properties.getProperty("huawei.rest.jaas")
     this.master = properties.getProperty("master")
     this.deployMode = properties.getProperty("deployMode")
-    this.args = properties.getProperty("args")
+    this.args = properties.getProperty("appArgs")
     this.queue = properties.getProperty("queue")
     this.maxAppAttempts = properties.getProperty("maxAppAttempts")
     this.waitAppCompletion = properties.getProperty("waitAppCompletion")

@@ -12,8 +12,9 @@
         <module>compute-common</module>
         <module>compute-spark</module>
         <module>compute-example</module>
-        <module>compute-monitor</module>
+        <module>compute-apis</module>
         <module>compute-utils</module>
+        <module>compute-ssh</module>
     </modules>
 
     <properties>
@@ -89,7 +90,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.scistor.compute.yarn.YarnClientUtils</mainClass>
+                                    <mainClass>com.scistor.compute.SparkJobStarter</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

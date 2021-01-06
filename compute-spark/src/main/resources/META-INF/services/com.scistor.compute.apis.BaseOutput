@@ -8,3 +8,4 @@ com.scistor.compute.output.batch.Gaussdb
 com.scistor.compute.output.batch.Oracle
 com.scistor.compute.output.batch.Gbase
 com.scistor.compute.output.batch.Es
+com.scistor.compute.output.batch.Hive

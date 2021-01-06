@@ -205,8 +205,8 @@ object YarnClientUtils {
     val yarnUtils = new YarnClientUtils(properties)
 
     val array: util.ArrayList[String] = new util.ArrayList[String](5)
-    array.add("内置算子模型2_93b085cd64834153bd1318c78351261b")
-
+    array.add("内置算子模型2_b8fc0f9341ea4393ad0a35d2ab783939")
+//
     val resultMap = yarnUtils.getApplicationStatusByArray(array)
 
 //    yarnUtils.killApplicationByJobName("kafka2kafka模型_74f595414aab47dd82d293a30bf4f1b2")

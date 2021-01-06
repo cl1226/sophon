@@ -30,6 +30,8 @@ object SparkJobStarter extends Logging {
 
   var jobName: String = _
 
+  var session: SparkSession = _
+
   def main(args: Array[String]): Unit = {
 
     if (args.length == 0) {
@@ -73,6 +75,7 @@ object SparkJobStarter extends Logging {
     val builder = SparkSession.builder.config(sparkConf)
     if (SparkInfoTransfer.enableHiveSupport) builder.enableHiveSupport()
     val sparkSession = builder.getOrCreate()
+    session = sparkSession
     sparkSession.sparkContext.setLogLevel("ERROR")
 
     // find all user defined UDFs and register in application init

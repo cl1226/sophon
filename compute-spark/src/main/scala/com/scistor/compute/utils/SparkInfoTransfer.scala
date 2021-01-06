@@ -50,6 +50,9 @@ object SparkInfoTransfer extends Logging {
               }
             }
             case DataSourceStepType.DataSourceOutput => {
+              if (step.getStepInfo.getStepType.equals("hive")) {
+                enableHiveSupport = true
+              }
               step.getStepInfo.setStepFrom(step.getStepFrom.get(0))
               outputs = outputs + (step.getStepInfo.getName -> step.getStepInfo)
             }
