@@ -15,6 +15,7 @@
         <module>compute-apis</module>
         <module>compute-utils</module>
         <module>compute-ssh</module>
+        <module>compute-mllib</module>
     </modules>
 
     <properties>

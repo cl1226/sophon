@@ -147,17 +147,9 @@ class YarnClientUtils {
 
   def getApplicationLogsByJobName(jobName: String): String = {
     var jobLog = ""
-    val method = prop.getProperty("method", "shell")
-    method match {
-      case "shell" => {
-        val application_id = getApplicationIdByJobName(jobName)
-        val cmd = prop.getProperty("get_job_error_log").replaceAll("application_id", application_id)
-        jobLog = runShellBlock(cmd, prop.getProperty("prefix", ""))
-      }
-      case _ => {
-        // http/https restful
-      }
-    }
+    val application_id = getApplicationIdByJobName(jobName)
+    val cmd = prop.getProperty("get_job_error_log").replaceAll("application_id", application_id)
+    jobLog = runShellBlock(cmd, prop.getProperty("prefix", ""))
     jobLog
   }
 

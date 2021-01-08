@@ -48,7 +48,18 @@ class Jdbc extends BaseOutput {
 
     val saveMode = definedProps.getOrElse("saveMode", "append").toString
 
-    df.write.mode(saveMode).jdbc(attrs.get("connectUrl").toString, attrs.get("tableName").toString, prop)
+    saveMode match {
+      case "overwrite" => {
+        df.write.mode(saveMode)
+          .option("truncate", "true")
+          .option("batchsize", "50000")
+          .jdbc(attrs.get("connectUrl").toString, attrs.get("tableName").toString, prop)
+      }
+      case _ => df.write.mode(saveMode)
+        .option("batchsize", "50000")
+        .jdbc(attrs.get("connectUrl").toString, attrs.get("tableName").toString, prop)
+    }
+
 
   }
 }
