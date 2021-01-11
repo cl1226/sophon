@@ -114,9 +114,18 @@ object SparkJobStarter extends Logging {
 
       for (f <- transforms) {
         breakable {
-          val df = viewTableMap.get(f.getConfig().getStepFrom)
+          val stepFrom = JSON.parseObject(f.getConfig().getStepFrom)
+          val tableName = stepFrom.get("stepName").toString
+          val df = viewTableMap.get(tableName)
           if(!df.isDefined) break
-          val tempFrame = f.process(sparkSession, df.get)
+          var tempDF: Dataset[Row] = null
+          if (!stepFrom.get("expresion").toString.equals("")) {
+            val expression = stepFrom.get("expresion").toString
+            tempDF = sparkSession.sql(s"select * from $tableName where $expression")
+          } else {
+            tempDF = df.get
+          }
+          val tempFrame = f.process(sparkSession, tempDF)
           registerTempView(f.getConfig().getName, tempFrame)
         }
       }
@@ -329,12 +338,19 @@ object SparkJobStarter extends Logging {
                             output: BaseOutput,
                             df: DataFrame): Unit = {
     val config = output.getConfig()
-    val option = viewTableMap.get(config.getStepFrom)
+    val stepFrom = JSON.parseObject(config.getStepFrom)
+    val option = viewTableMap.get(stepFrom.get("stepName").toString)
     breakable {
       var ds: Dataset[Row] = null
       if (df == null) {
         if (!option.isDefined) break
-        ds = option.get
+        val tableName = stepFrom.get("stepName").toString
+        val expression = stepFrom.get("expresion").toString
+        if (!expression.equals("")) {
+          ds = sparkSession.sql(s"select * from $tableName where $expression")
+        } else {
+          ds = option.get
+        }
       } else {
         ds = df
       }

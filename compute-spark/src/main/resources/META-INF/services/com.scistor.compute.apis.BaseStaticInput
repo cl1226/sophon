@@ -11,3 +11,4 @@ com.scistor.compute.input.batch.Hive
 com.scistor.compute.input.batch.Ftp
 com.scistor.compute.input.batch.Http
 com.scistor.compute.input.batch.Fileinput
+com.scistor.compute.input.batch.FtpFileInput
