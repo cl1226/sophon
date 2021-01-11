@@ -1,15 +1,18 @@
 package com.scistor.compute.yarn
 
+import com.scistor.compute.common.ShellUtils
 import com.scistor.compute.common.ShellUtils._
-import org.apache.hadoop.fs.Path
+import com.sun.security.auth.callback.TextCallbackHandler
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.api.records.YarnApplicationState
 import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 
-import java.net.URI
+import java.io.File
 import java.util.Properties
 import java.util.regex.{Matcher, Pattern}
 import java.util
+import javax.security.auth.login.LoginContext
 import scala.collection.JavaConverters._
 
 class YarnClientUtils {
@@ -17,19 +20,37 @@ class YarnClientUtils {
   private var prop = new Properties
   private val yarnClient = YarnClient.createYarnClient()
   private var debug = false
+  private var lc: LoginContext = null
+
+//  System.setProperty("java.security.krb5.conf", "/opt/krb5config/krb5.conf")
+//  System.setProperty("sun.security.krb5.debug", "false")
+//  System.setProperty("java.security.auth.login.config", "/opt/krb5config/jaas.conf")
+//  login()
+//  UserGroupInformation.loginUserFromKeytab("scistor", "/opt/krb5config/user.keytab")
 
   def this(properties: Properties) {
     this()
     this.prop = properties
     this.debug = this.prop.getProperty("debug", "false").equals("true")
+    ShellUtils.debug = this.debug
 
     val yarnSitePath = prop.getProperty("yarn_site_path", "")
-    if (!"".equals(yarnSitePath)) {
+    val method = prop.getProperty("method", "shell")
+    if (method.equals("api") && !"".equals(yarnSitePath)) {
       val conf = new YarnConfiguration()
-      conf.addResource(new Path(URI.create(yarnSitePath)))
+      conf.addResource(new File(yarnSitePath).toURI.toURL)
+//      conf.set("hadoop.security.authentication", "kerberos")
+//      conf.set("hadoop.registry.client.auth", "kerberos")
       yarnClient.init(conf)
       yarnClient.start()
     }
+  }
+
+  private def login(): Unit = {
+    lc = new LoginContext("Client", new TextCallbackHandler)
+    lc.login()
+    println("Authentication success: ")
+    lc.getSubject.getPrincipals.toArray.foreach(println)
   }
 
   def getApplicationStatusByArray(jobNames: util.ArrayList[String]): util.HashMap[String, util.HashMap[String, String]] = {
@@ -41,6 +62,9 @@ class YarnClientUtils {
           val res: util.HashMap[String, String] = getApplicationStatusByJobName(job)
           res.put("yarnid", job)
           resultMap.put(job, res)
+          if (debug) {
+            println(resultMap.toString)
+          }
         })
       }
       case _ => {
@@ -91,7 +115,12 @@ class YarnClientUtils {
       case "shell" => {
         var application_id = ""
         val cmd = prop.getProperty("get_job_id").replaceAll("jobName", jobName)
-        val result = runShellBlock(cmd, prop.getProperty("prefix", ""))
+        val prefix = prop.getProperty("prefix", "")
+        if (debug) {
+          println(s"prefix: $prefix")
+          println(s"command: $cmd")
+        }
+        val result = runShellBlock(cmd, prefix)
 
         val p = Pattern.compile(prop.getProperty("get_job_id_reg"))
         val matcher: Matcher = p.matcher(result)
@@ -122,6 +151,10 @@ class YarnClientUtils {
     var jobStatus = ""
     var finalJobStatus = ""
     val application_id = getApplicationIdByJobName(jobName)
+
+    if (debug) {
+      println(s"jobName: $jobName -- application_id: $application_id")
+    }
 
     val map = new util.HashMap[String, String]()
 
@@ -197,7 +230,7 @@ object YarnClientUtils {
     val yarnUtils = new YarnClientUtils(properties)
 
     val array: util.ArrayList[String] = new util.ArrayList[String](5)
-    array.add("内置算子模型2_b8fc0f9341ea4393ad0a35d2ab783939")
+    array.add("hive2hive_358a020500fa4cac8c541e05304ae181")
 //
     val resultMap = yarnUtils.getApplicationStatusByArray(array)
 

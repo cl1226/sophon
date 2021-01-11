@@ -16,6 +16,8 @@ class ComputeProcessLogger extends ProcessLogger {
 
 object ShellUtils {
 
+  var debug: Boolean = false
+
   def runShell(command: String, prefix: String): Unit = {
     val cmd: String = prefix match {
       case "" => command
@@ -45,7 +47,7 @@ object ShellUtils {
 
       }
       case false => {
-        val cmds = Array("/bin/sh", "-c", command)
+        val cmds = Array("/bin/sh", "-c", cmd)
         val process = Runtime.getRuntime.exec(cmds)
         process.waitFor()
         val inputStream = process.getInputStream
