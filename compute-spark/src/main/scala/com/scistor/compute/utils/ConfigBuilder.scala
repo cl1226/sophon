@@ -131,6 +131,8 @@ class ConfigBuilder {
       case "java-package" | "spark-package" | "java-script" | "scala-script" | "sql-script" | "python-command" | "shell-command" => {
         "userDefinedTransform"
       }
+      case "machine_learning_text_classification" => "MLTextClass"
+      case "machine_learning_image_recognition" => "MLImgReco"
       case _ => name.substring(0, 1).toUpperCase().concat(name.substring(1).toLowerCase()).replace("stream", "Stream")
     }
     if (qualifier.split("\\.").length == 1) {

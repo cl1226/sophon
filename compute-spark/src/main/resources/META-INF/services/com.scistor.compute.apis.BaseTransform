@@ -11,3 +11,4 @@ com.scistor.compute.transform.Script
 com.scistor.compute.transform.Constant
 com.scistor.compute.transform.UserDefinedTransform
 com.scistor.compute.transform.Switch
+com.scistor.compute.transform.MLTextClass
