@@ -119,8 +119,8 @@ object SparkJobStarter extends Logging {
           val df = viewTableMap.get(tableName)
           if(!df.isDefined) break
           var tempDF: Dataset[Row] = null
-          if (!stepFrom.get("expresion").toString.equals("")) {
-            val expression = stepFrom.get("expresion").toString
+          if (!stepFrom.get("expression").toString.equals("")) {
+            val expression = stepFrom.get("expression").toString
             tempDF = sparkSession.sql(s"select * from $tableName where $expression")
           } else {
             tempDF = df.get
@@ -345,7 +345,7 @@ object SparkJobStarter extends Logging {
       if (df == null) {
         if (!option.isDefined) break
         val tableName = stepFrom.get("stepName").toString
-        val expression = stepFrom.get("expresion").toString
+        val expression = stepFrom.get("expression").toString
         if (!expression.equals("")) {
           ds = sparkSession.sql(s"select * from $tableName where $expression")
         } else {

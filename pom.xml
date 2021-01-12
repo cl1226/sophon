@@ -16,6 +16,7 @@
         <module>compute-utils</module>
         <module>compute-ssh</module>
         <module>compute-mllib</module>
+        <module>compute-xian</module>
     </modules>
 
     <properties>

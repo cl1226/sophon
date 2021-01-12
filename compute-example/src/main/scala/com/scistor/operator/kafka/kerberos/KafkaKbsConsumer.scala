@@ -25,7 +25,7 @@ object KafkaKbsConsumer {
     props.setProperty("sasl.kerberos.service.name", "kafka")
 
     val consumer = new KafkaConsumer[String, String](props)
-    val topics = java.util.Arrays.asList("demo")
+    val topics = java.util.Arrays.asList("source01")
     consumer.subscribe(topics)
     var consumerRecords: ConsumerRecords[String, String] = null
 
