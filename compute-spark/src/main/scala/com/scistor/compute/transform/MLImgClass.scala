@@ -5,11 +5,13 @@ import com.scistor.compute.apis.BaseTransform
 import com.scistor.compute.model.remote.TransStepDTO
 import com.scistor.compute.utils.HttpUtils
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
+import sun.misc.BASE64Encoder
 
 import java.util
+import java.util.Base64
 import scala.collection.JavaConversions._
 
-class MLTextClass extends BaseTransform {
+class MLImgClass extends BaseTransform {
 
   var config: TransStepDTO = _
 
@@ -37,35 +39,30 @@ class MLTextClass extends BaseTransform {
       println("\t" + key + " = " + value)
     })
 
-    val input: Array[String] = df.rdd.map(d => {
+    val input: Array[(String, String)] = df.rdd.map(d => {
       val fileName: String = d.getAs[String]("ftpFileName")
       val fileContent: Array[Byte] = d.getAs[Array[Byte]]("ftpFileContent")
-      val content = new String(fileContent, "utf-8")
-      content
+      val content = new BASE64Encoder().encode(fileContent)
+      (fileName, content)
     }).collect
 
     val map: util.Map[String, Any] = new util.HashMap[String, Any]
-    map.put("frame", attrs.getOrDefault("frame", "tensorflow2").toString)
-    map.put("model", attrs.getOrDefault("model", "textcnn").toString)
-    map.put("modelpath", attrs.getOrDefault("modelpath", "").toString)
-    val childParam: util.Map[String, Any] = new util.HashMap[String, Any]
-    childParam.put("class_num", attrs.getOrDefault("class_num", "0").toString.toInt)
-    childParam.put("maxlen", attrs.getOrDefault("maxlen", "0").toString.toInt)
-    childParam.put("embedding_dims", attrs.getOrDefault("embedding_dims", "0").toString.toInt)
-    childParam.put("epochs", attrs.getOrDefault("epochs", "0").toString.toInt)
-    childParam.put("batch_size", attrs.getOrDefault("batch_size", "0").toString.toInt)
-    childParam.put("max_features", attrs.getOrDefault("max_features", "0").toString.toInt)
-    map.put("modelparam", childParam)
-    val contents: util.List[util.Map[String, Any]] = new util.ArrayList[util.Map[String, Any]]
-    input.foreach(i => {
-      val map: util.Map[String, Any] = new util.HashMap[String, Any]
-      map.put("content", i)
-      contents.add(map)
-    })
-    map.put("input", contents)
+    map.put("frame", attrs.getOrDefault("frame", "pytorch").toString)
+    map.put("model", attrs.getOrDefault("model", "yolov5s.pt").toString)
+    map.put("image_save", attrs.getOrDefault("image_save", "false"))
 
-    val url: String = attrs.getOrDefault("url", "http://192.168.31.46:7777/api/text/classify/predict").toString
+    val arr = new util.ArrayList[util.Map[String, String]]()
+    input.foreach(i => {
+      val m = new util.HashMap[String, String]()
+      m.put("url", i._1)
+      m.put("data", i._2)
+      arr.add(m)
+    })
+    map.put("image_data", arr)
+
+    val url: String = attrs.getOrDefault("url", "http://192.168.31.46:7777/api/picture/classify").toString
     val param: String = JSON.toJSON(map).toString
+
     val res: String = HttpUtils.doPost(url, param)
     val jsonObject = JSON.parseObject(res)
     val result = jsonObject.getString("result")

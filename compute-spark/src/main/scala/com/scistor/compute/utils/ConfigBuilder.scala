@@ -132,7 +132,7 @@ class ConfigBuilder {
         "userDefinedTransform"
       }
       case "machine_learning_text_classification" => "MLTextClass"
-      case "machine_learning_image_recognition" => "MLImgReco"
+      case "machine_learning_image_recognition" => "MLImgClass"
       case _ => name.substring(0, 1).toUpperCase().concat(name.substring(1).toLowerCase()).replace("stream", "Stream")
     }
     if (qualifier.split("\\.").length == 1) {
