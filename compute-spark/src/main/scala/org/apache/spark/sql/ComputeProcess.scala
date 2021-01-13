@@ -206,7 +206,7 @@ object ComputeProcess {
               if (f.getConstant) {
                 functions.lit(f.getConstantValue).expr
               } else {
-                functions.col(f.getStreamFieldName).expr
+                functions.col(f.getStreamFieldName).cast(DataType.valueOf(f.getFieldType.toUpperCase).getSparkDataType).expr
               }
             })
             objects

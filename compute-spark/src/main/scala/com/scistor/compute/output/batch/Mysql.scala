@@ -48,14 +48,9 @@ class Mysql extends BaseOutput {
     }
 
     println(s"[INFO] 输出数据源 [${config.getStepType}] properties: ")
-    prop.foreach(entry => {
+    attrs.foreach(entry => {
       val (key, value) = entry
       println("\t" + key + " = " + value)
-    })
-
-    writeProps.foreach(entry => {
-      val (key, value) = entry
-      println("\t" + key + "=" + value)
     })
 
     val saveMode = writeProps.getOrDefault("saveMode", "append").toString
