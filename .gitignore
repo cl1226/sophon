@@ -7,3 +7,5 @@
 /compute-example/target/
 /compute-common/target/
 /compute-monitor/target/
+/compute-xian/target/
+/compute-xian/src/test/
