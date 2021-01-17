@@ -1,6 +1,9 @@
 package com.scistor.compute.common
 
-import java.io.InputStreamReader
+import org.apache.commons.exec.{CommandLine, DefaultExecuteResultHandler, DefaultExecutor, ExecuteWatchdog, PumpStreamHandler}
+
+import java.io.{BufferedInputStream, BufferedReader, ByteArrayOutputStream, InputStreamReader}
+import scala.::
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
@@ -47,19 +50,28 @@ object ShellUtils {
 
       }
       case false => {
+        if (debug) {
+          println(s"cmd: $cmd")
+        }
+
         val cmds = Array("/bin/sh", "-c", cmd)
         val process = Runtime.getRuntime.exec(cmds)
-        process.waitFor()
+        val sb = new StringBuffer
+        val sb2 = new StringBuffer
         val inputStream = process.getInputStream
-        val reader = new InputStreamReader(inputStream)
-        val buffer = new Array[Char](1024)
-        var bytes_read = reader.read(buffer)
-        val stringBuffer = new StringBuffer()
-        while (bytes_read > 0) {
-          stringBuffer.append(buffer, 0, bytes_read)
-          bytes_read = reader.read(buffer)
-        }
-        stringBuffer.toString
+        val errorStream = process.getErrorStream
+
+        val thread1=new Thread(new RunThread(inputStream, sb))
+        thread1.start()
+        val thread2=new Thread(new RunThread(errorStream, sb2))
+        thread2.start()
+
+        process.waitFor()
+
+        thread1.interrupt()
+        thread2.interrupt()
+
+        sb.toString()
       }
     }
   }

@@ -116,10 +116,6 @@ class YarnClientUtils {
         var application_id = ""
         val cmd = prop.getProperty("get_job_id").replaceAll("jobName", jobName)
         val prefix = prop.getProperty("prefix", "")
-        if (debug) {
-          println(s"prefix: $prefix")
-          println(s"command: $cmd")
-        }
         val result = runShellBlock(cmd, prefix)
 
         val p = Pattern.compile(prop.getProperty("get_job_id_reg"))
@@ -181,6 +177,9 @@ class YarnClientUtils {
   def getApplicationLogsByJobName(jobName: String): String = {
     var jobLog = ""
     val application_id = getApplicationIdByJobName(jobName)
+    if (debug) {
+      println(s"jobName: $jobName -- application_id: $application_id")
+    }
     val cmd = prop.getProperty("get_job_error_log").replaceAll("application_id", application_id)
     jobLog = runShellBlock(cmd, prop.getProperty("prefix", ""))
     jobLog
