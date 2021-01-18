@@ -10,10 +10,13 @@ object Runner {
     import session.implicits._
 
     session.sparkContext.setLogLevel("ERROR")
-    val url = "ftp://ftpuser:123456@192.168.31.219:21/home/ftpuser/xian-0115"
-    val rdd = session.sparkContext.binaryFiles(url)
-    val frame = rdd.map(x => (x._1, x._2.toArray())).toDF("ftpFileName", "ftpFileContent")
-    frame.show()
+//    val url = "compute-xian/data/"
+//    val rdd = session.sparkContext.binaryFiles(url)
+//    val frame = rdd.map(x => (x._1, x._2.toArray())).toDF("ftpFileName", "ftpFileContent")
+//    frame.show()
+
+    val rdd = session.sparkContext.parallelize(Seq(("aaa", "bbb"), ("aaa", "bbb")))
+    val frame = rdd.toDF("ftpFileName", "ftpFileContent")
 
     val demo = new Demo1
     val df = demo.transform(session, frame)

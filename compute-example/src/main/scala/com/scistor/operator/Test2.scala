@@ -11,8 +11,11 @@ object Test2 {
   }
 
   def main(args: Array[String]): Unit = {
-    val res = process("a", "b")
-    println(res)
+//    val res = process("a", "b")
+//    println(res)
+    val cmd = "source /opt"
+    val cmd1 = s"'$cmd'"
+    println(s"cmd1: $cmd1")
   }
 
 }

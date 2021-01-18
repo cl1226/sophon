@@ -47,7 +47,16 @@ class Hive extends BaseStaticInput {
       println("\t" + key + " = " + value)
     })
 
+    val database = attrs.get("dataBaseName").toString
     val table = attrs.get("source").toString
-    spark.sql(s"select * from ${table}")
+    spark.sql(s"use $database")
+    table.contains("select") match {
+      case true => {
+        spark.sql(table)
+      }
+      case _ => {
+        spark.sql(s"select * from ${table}")
+      }
+    }
   }
 }
