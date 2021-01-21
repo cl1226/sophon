@@ -1,9 +1,5 @@
 package com.scistor.compute.common
 
-import org.apache.commons.exec.{CommandLine, DefaultExecuteResultHandler, DefaultExecutor, ExecuteWatchdog, PumpStreamHandler}
-
-import java.io.{BufferedInputStream, BufferedReader, ByteArrayOutputStream, InputStreamReader}
-import scala.::
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
