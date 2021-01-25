@@ -90,7 +90,7 @@ class Oracle extends Jdbc {
               tuples.+= ((start, end))
             }
             predicates = tuples.map(elem => {
-              s"cast($incrementColumn as datetime) >= '${elem._1}' and cast($incrementColumn as datetime) < '${elem._2}'"
+              s"to_char(to_date($incrementColumn, 'yyyy-MM-dd hh24:mi:ss')) >= '${elem._1}' and to_char(to_date($incrementColumn, 'yyyy-MM-dd hh24:mi:ss')) < '${elem._2}'"
             }).toArray
             prop.setProperty("now", format.format(now.getTime))
 
