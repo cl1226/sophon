@@ -1,1 +1,2 @@
 com.scistor.compute.input.sparkstreaming.KafkaStream
+com.scistor.compute.input.sparkstreaming.RedisStream
