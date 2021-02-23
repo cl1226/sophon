@@ -223,7 +223,6 @@ class YarnClientUtils {
     val p4 = Pattern.compile(prop.getProperty("get_queue_currentcapacity_reg"))
 
     val array = res.split("\n")
-    println(array.length)
 
     val queues = new util.ArrayList[util.HashMap[String, String]]()
     var map: util.HashMap[String, String] = null
