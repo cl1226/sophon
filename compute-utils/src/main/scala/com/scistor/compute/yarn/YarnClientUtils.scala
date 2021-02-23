@@ -222,7 +222,8 @@ class YarnClientUtils {
     val p3 = Pattern.compile(prop.getProperty("get_queue_capacity_reg"))
     val p4 = Pattern.compile(prop.getProperty("get_queue_currentcapacity_reg"))
 
-    val array = res.split("\r\n")
+    val array = res.split("\n")
+    println(array.length)
 
     val queues = new util.ArrayList[util.HashMap[String, String]]()
     var map: util.HashMap[String, String] = null
@@ -275,23 +276,25 @@ object YarnClientUtils {
       println(r.toString)
     }
 
-//    val res: String = """21/02/22 21:57:25 INFO client.RMProxy: Connecting to ResourceManager at sinan01/192.168.31.77:8032
-//                      |======================
-//                      |Queue Name : root.default
-//                      |Queue State : running
-//                      |Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
-//                      |======================
-//                      |Queue Name : root.users
-//                      |Queue State : running
-//                      |Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
-//                      |    ======================
-//                      |    Queue Name : root.users.mr
-//                      |    Queue State : running
-//                      |    Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
-//                      |    ======================
-//                      |    Queue Name : root.users.spark
-//                      |    Queue State : running
-//                      |    Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0""".stripMargin
+//    val res: String = """SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+//                        |SLF4J: Defaulting to no-operation (NOP) logger implementation
+//                        |SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+//                        |======================
+//                        |Queue Name : root.users
+//                        |Queue State : running
+//                        |Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
+//                        |    ======================
+//                        |    Queue Name : root.users.mr
+//                        |    Queue State : running
+//                        |    Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
+//                        |    ======================
+//                        |    Queue Name : root.users.spark
+//                        |    Queue State : running
+//                        |    Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
+//                        |======================
+//                        |Queue Name : root.default
+//                        |Queue State : running
+//                        |Scheduling Info : Capacity: 100.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 1.2328259""".stripMargin
 //    val p1 = Pattern.compile(properties.getProperty("get_queue_name_reg"))
 //    val p2 = Pattern.compile(properties.getProperty("get_queue_state_reg"))
 //    val p3 = Pattern.compile(properties.getProperty("get_queue_capacity_reg"))
