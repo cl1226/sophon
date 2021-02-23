@@ -8,7 +8,7 @@ import org.apache.hadoop.yarn.api.records.YarnApplicationState
 import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 
-import java.io.File
+import java.io.{BufferedInputStream, File}
 import java.util.Properties
 import java.util.regex.{Matcher, Pattern}
 import java.util
@@ -212,6 +212,49 @@ class YarnClientUtils {
       }
     }
   }
+
+  def getAllQueues(): util.ArrayList[util.HashMap[String, String]] = {
+    val cmd = prop.getProperty("get_queue_command", "mapred queue -list")
+    val res = runShellBlock(cmd, "")
+
+    val p1 = Pattern.compile(prop.getProperty("get_queue_name_reg"))
+    val p2 = Pattern.compile(prop.getProperty("get_queue_state_reg"))
+    val p3 = Pattern.compile(prop.getProperty("get_queue_capacity_reg"))
+    val p4 = Pattern.compile(prop.getProperty("get_queue_currentcapacity_reg"))
+
+    val array = res.split("\r\n")
+
+    val queues = new util.ArrayList[util.HashMap[String, String]]()
+    var map: util.HashMap[String, String] = null
+    for (s <- array) {
+      val matcher1 = p1.matcher(s)
+      if (matcher1.find()) {
+        map = new util.HashMap[String, String]
+        val str = matcher1.group(1)
+        map.put("name", str)
+      }
+      val matcher2 = p2.matcher(s)
+      if (matcher2.find()) {
+        val str = matcher2.group(1)
+        map.put("state", str)
+      }
+      val matcher3 = p3.matcher(s)
+      if (matcher3.find()) {
+        val str = matcher3.group(1)
+        map.put("capacity", str)
+      }
+      val matcher4 = p4.matcher(s)
+      if (matcher4.find()) {
+        val str = matcher4.group(1)
+        map.put("currentcapacity", str)
+      }
+      if (map != null && !map.isEmpty && map.size() >= 4) {
+        queues.add(map)
+        map = new util.HashMap[String, String]
+      }
+    }
+    queues
+  }
 }
 
 object YarnClientUtils {
@@ -220,12 +263,73 @@ object YarnClientUtils {
     properties.load(this.getClass.getResourceAsStream("/yarn_cmd.properties"))
     val yarnUtils = new YarnClientUtils(properties)
 
-    val array: util.ArrayList[String] = new util.ArrayList[String](5)
-    array.add("hive2hive_358a020500fa4cac8c541e05304ae181")
-//
-    val resultMap = yarnUtils.getApplicationStatusByArray(array)
+//    val array: util.ArrayList[String] = new util.ArrayList[String](5)
+//    array.add("hive2hive_358a020500fa4cac8c541e05304ae181")
+//    val resultMap = yarnUtils.getApplicationStatusByArray(array)
 
 //    yarnUtils.killApplicationByJobName("kafka2kafka模型_74f595414aab47dd82d293a30bf4f1b2")
-    resultMap.asScala.foreach(println)
+//    resultMap.asScala.foreach(println)
+
+    val result = yarnUtils.getAllQueues()
+    for (r <- result.asScala) {
+      println(r.toString)
+    }
+
+//    val res: String = """21/02/22 21:57:25 INFO client.RMProxy: Connecting to ResourceManager at sinan01/192.168.31.77:8032
+//                      |======================
+//                      |Queue Name : root.default
+//                      |Queue State : running
+//                      |Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
+//                      |======================
+//                      |Queue Name : root.users
+//                      |Queue State : running
+//                      |Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
+//                      |    ======================
+//                      |    Queue Name : root.users.mr
+//                      |    Queue State : running
+//                      |    Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0
+//                      |    ======================
+//                      |    Queue Name : root.users.spark
+//                      |    Queue State : running
+//                      |    Scheduling Info : Capacity: 0.0, MaximumCapacity: UNDEFINED, CurrentCapacity: 0.0""".stripMargin
+//    val p1 = Pattern.compile(properties.getProperty("get_queue_name_reg"))
+//    val p2 = Pattern.compile(properties.getProperty("get_queue_state_reg"))
+//    val p3 = Pattern.compile(properties.getProperty("get_queue_capacity_reg"))
+//    val p4 = Pattern.compile(properties.getProperty("get_queue_currentcapacity_reg"))
+//
+//    val array = res.split("\r\n")
+//    val queues = new util.ArrayList[util.HashMap[String, String]]()
+//    var map: util.HashMap[String, String] = null
+//    for (s <- array) {
+//      val matcher1 = p1.matcher(s)
+//      if (matcher1.find()) {
+//        map = new util.HashMap[String, String]
+//        val str = matcher1.group(1)
+//        map.put("name", str)
+//      }
+//      val matcher2 = p2.matcher(s)
+//      if (matcher2.find()) {
+//        val str = matcher2.group(1)
+//        map.put("state", str)
+//      }
+//      val matcher3 = p3.matcher(s)
+//      if (matcher3.find()) {
+//        val str = matcher3.group(1)
+//        map.put("capacity", str)
+//      }
+//      val matcher4 = p4.matcher(s)
+//      if (matcher4.find()) {
+//        val str = matcher4.group(1)
+//        map.put("currentcapacity", str)
+//      }
+//      if (map != null && !map.isEmpty && map.size() >= 4) {
+//        queues.add(map)
+//        map = new util.HashMap[String, String]
+//      }
+//    }
+//
+//    for (r <- queues.asScala) {
+//      println(r.toString)
+//    }
   }
 }
