@@ -36,6 +36,9 @@ object ShellUtils {
       case "" => command
       case _ => s"$prefix $command"
     }
+    if (debug) {
+      println(s"cmd: $cmd")
+    }
     var res: String = ""
     cmd.indexOf("ssh") >= 0 match {
       case true => {
@@ -46,10 +49,6 @@ object ShellUtils {
 
       }
       case false => {
-        if (debug) {
-          println(s"cmd: $cmd")
-        }
-
         val cmds = Array("/bin/sh", "-c", cmd)
         val process = Runtime.getRuntime.exec(cmds)
         val sb = new StringBuffer

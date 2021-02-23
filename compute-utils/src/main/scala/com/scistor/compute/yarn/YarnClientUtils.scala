@@ -215,7 +215,7 @@ class YarnClientUtils {
 
   def getAllQueues(): util.ArrayList[util.HashMap[String, String]] = {
     val cmd = prop.getProperty("get_queue_command", "mapred queue -list")
-    val res = runShellBlock(cmd, "")
+    val res = runShellBlock(cmd, prop.getProperty("prefix", ""))
 
     val p1 = Pattern.compile(prop.getProperty("get_queue_name_reg"))
     val p2 = Pattern.compile(prop.getProperty("get_queue_state_reg"))
@@ -231,22 +231,22 @@ class YarnClientUtils {
       if (matcher1.find()) {
         map = new util.HashMap[String, String]
         val str = matcher1.group(1)
-        map.put("name", str)
+        map.put("name", str.trim)
       }
       val matcher2 = p2.matcher(s)
       if (matcher2.find()) {
         val str = matcher2.group(1)
-        map.put("state", str)
+        map.put("state", str.trim)
       }
       val matcher3 = p3.matcher(s)
       if (matcher3.find()) {
         val str = matcher3.group(1)
-        map.put("capacity", str)
+        map.put("capacity", str.trim)
       }
       val matcher4 = p4.matcher(s)
       if (matcher4.find()) {
         val str = matcher4.group(1)
-        map.put("currentcapacity", str)
+        map.put("currentcapacity", str.trim)
       }
       if (map != null && !map.isEmpty && map.size() >= 4) {
         queues.add(map)
