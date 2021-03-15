@@ -13,3 +13,4 @@ com.scistor.compute.transform.UserDefinedTransform
 com.scistor.compute.transform.Switch
 com.scistor.compute.transform.MLTextClass
 com.scistor.compute.transform.MLImgClass
+com.scistor.compute.transform.Siddhi

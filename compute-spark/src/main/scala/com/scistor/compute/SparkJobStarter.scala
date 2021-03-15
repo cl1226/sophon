@@ -155,7 +155,8 @@ object SparkJobStarter extends Logging {
                                  ): Unit = {
     val info = SparkInfoTransfer.jobInfo
     jobName = sparkSession.sparkContext.getConf.get("spark.app.name", SparkInfoTransfer.jobName)
-    val duration: Long = info.getStepList.get(0).getStepInfo.getStepAttributes.get("properties").asInstanceOf[util.Map[String, AnyRef]].getOrDefault("batchDuration", "10").toString.toLong
+//    val duration: Long = info.getStepList.get(0).getStepInfo.getStepAttributes.get("properties").asInstanceOf[util.Map[String, AnyRef]].getOrDefault("batchDuration", "10").toString.toLong
+    val duration: Long = 10L
     val ssc = new StreamingContext(sparkSession.sparkContext, Seconds(duration))
 
     basePrepare(sparkSession, staticInputs, streamingInputs, outputs)
@@ -177,9 +178,12 @@ object SparkJobStarter extends Logging {
           new JdbcUtil(sparkSession, info.getMysqlConfig).writeDataCount("0", ds.count().toString, jobName)
 
           val tableName = streamingInput.getConfig().getName
-          streamingInput.getConfig().getOutputFields.asScala.foreach(out => {
-            ds = ds.withColumnRenamed(out.getStreamFieldName, out.getFieldName)
-          })
+          if (streamingInput.getConfig().getOutputFields != null) {
+            streamingInput.getConfig().getOutputFields.asScala.foreach(out => {
+              ds = ds.withColumnRenamed(out.getStreamFieldName, out.getFieldName)
+            })
+          }
+
           viewTableMap += (tableName -> ds)
           ds.persist(StorageLevel.MEMORY_AND_DISK)
 
@@ -354,18 +358,19 @@ object SparkJobStarter extends Logging {
       } else {
         ds = df
       }
-
-      config.getInputFields.foreach(out => {
-        if (ds.columns.contains(out.getStreamFieldName)) {
-          if (!out.getConstant) ds = ds.withColumn(out.getFieldName, ds.col(out.getStreamFieldName).cast(ComputeDataType.fromStructField(out.getFieldType)))
-          else ds = ds.withColumn(out.getFieldName, new Column(out.getConstantValue))
-        }
-      })
-      // 移除不输出的列
       val allCols = ds.schema.map(_.name)
-      val needCols = config.getInputFields.map(_.getFieldName)
-      allCols.foreach { col =>
-        if (!needCols.contains(col)) ds = ds.drop(col)
+      if (config.getInputFields != null) {
+        config.getInputFields.foreach(out => {
+          if (ds.columns.contains(out.getStreamFieldName)) {
+            if (!out.getConstant) ds = ds.withColumn(out.getFieldName, ds.col(out.getStreamFieldName).cast(ComputeDataType.fromStructField(out.getFieldType)))
+            else ds = ds.withColumn(out.getFieldName, new Column(out.getConstantValue))
+          }
+        })
+        // 移除不输出的列
+        val needCols = config.getInputFields.map(_.getFieldName)
+        allCols.foreach { col =>
+          if (!needCols.contains(col)) ds = ds.drop(col)
+        }
       }
 
       println("[INFO] output dataframe: ")

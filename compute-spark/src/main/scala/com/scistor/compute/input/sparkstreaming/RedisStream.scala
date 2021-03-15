@@ -3,7 +3,6 @@ package com.scistor.compute.input.sparkstreaming
 import com.scistor.compute.apis.BaseStreamingInput
 import com.scistor.compute.input.sparkstreaming.receiver.redis.{RedisInfo, RedisReceiver}
 import com.scistor.compute.model.remote.TransStepDTO
-import org.apache.calcite.avatica.ColumnMetaData.StructType
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Dataset, Row, RowFactory, SparkSession}

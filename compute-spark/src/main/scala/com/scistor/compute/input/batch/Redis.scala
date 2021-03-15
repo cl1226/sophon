@@ -47,10 +47,10 @@ class Redis extends BaseStaticInput {
     })
 
     val host = attrs.get("host").toString
-    val port = attrs.getOrDefault("port", defaultPort).toString.toInt
+    val port = attrs.getOrDefault("port", defaultPort + "").toString.toInt
     val keyPattern = attrs.get("key_pattern").toString
-    val partition = attrs.getOrDefault("partition", defaultPartition).toString.toInt
-    val dbNum = attrs.getOrDefault("db_num", defaultDb).toString.toInt
+    val partition = attrs.getOrDefault("partition", defaultPartition + "").toString.toInt
+    val dbNum = attrs.getOrDefault("db_num", defaultDb + "").toString.toInt
     val redisConfig = new RedisConfig(new RedisEndpoint(host = host, port = port, dbNum = dbNum))
     val redisRDD = spark.sparkContext.fromRedisKV(keyPattern, partition)(redisConfig = redisConfig)
 
