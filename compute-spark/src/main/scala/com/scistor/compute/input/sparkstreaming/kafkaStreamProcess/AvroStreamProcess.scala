@@ -21,12 +21,6 @@ class AvroStreamProcess(config: TransStepDTO) extends KafkaStream {
     val attrs = config.getStepAttributes
     val avroSchema = attrs.get("avroSchema").toString
 
-    val structFields = mutable.ArrayBuffer[StructField]()
-    config.getOutputFields.foreach(output => {
-      structFields += DataTypes.createStructField(output.getStreamFieldName, ComputeDataType.fromStructField(output.getFieldType), true)
-    })
-    val schema2 = DataTypes.createStructType(structFields.toArray)
-
     val transformedRDD = rdd.mapPartitions {
       iterator => {
         val list = iterator.toList
@@ -43,12 +37,19 @@ class AvroStreamProcess(config: TransStepDTO) extends KafkaStream {
 
     import spark.implicits._
 
-    val df = spark.read
-      .schema(schema2)
-      .json(spark.createDataset(transformedRDD))
+    config.getOutputFields == null match {
+      case true => {
+        spark.read.json(spark.createDataset(transformedRDD))
+      }
+      case _ => {
+        val structFields = mutable.ArrayBuffer[StructField]()
+        config.getOutputFields.foreach(output => {
+          structFields += DataTypes.createStructField(output.getStreamFieldName, ComputeDataType.fromStructField(output.getFieldType), true)
+        })
+        val schema2 = DataTypes.createStructType(structFields.toArray)
 
-    df.show()
-
-    df
+        spark.read.schema(schema2).json(spark.createDataset(transformedRDD))
+      }
+    }
   }
 }

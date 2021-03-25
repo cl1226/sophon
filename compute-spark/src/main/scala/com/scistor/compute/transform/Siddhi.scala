@@ -1,6 +1,7 @@
 package com.scistor.compute.transform
 
 import com.alibaba.fastjson.JSON
+import com.scistor.compute.SparkJobStarter.siddhiAppRuntime
 import com.scistor.compute.apis.BaseTransform
 import com.scistor.compute.model.remote.{SparkStepDTO, TransStepDTO}
 import io.siddhi.core.SiddhiManager
@@ -41,64 +42,53 @@ class Siddhi extends BaseTransform {
 //      println("\t" + key + " = " + value)
 //    })
 
-    val siddhiApp: String = attrs.getOrDefault("text", "").toString
     val stepList: java.util.List[SparkStepDTO] = JSON.parseArray(attrs.get("stepList").toString, classOf[SparkStepDTO])
 
     val inStreams = stepList.filter(_.getStepInfo.getStepType.equals("in_stream"))
     val outStreams = stepList.filter(_.getStepInfo.getStepType.equals("out_stream"))
-
-    var result: RDD[AnyRef] = null
 
     val inStreamName = inStreams.get(0).getStepInfo.getName
     val outStreamName = outStreams.get(0).getStepInfo.getName
 
     val inputFields = inStreams.get(0).getStepInfo.getInputFields
 
-    var array = Array.empty[String]
-    inputFields.foreach(input => {
-      array = array :+ input.getFieldName
+    val columns = inputFields.map(in => {
+      col(in.getFieldName).cast(ComputeDataType.fromStructField(in.getFieldType))
     })
 
-    val fromDF = df.select(array.map(col(_)):_*)
+    val fromDF = df.select(columns:_*)
+
+    var tempArray = ArrayBuffer.empty[AnyRef]
+    siddhiAppRuntime.addCallback(outStreamName, new StreamCallback() {
+      override def receive(events: Array[Event]): Unit = {
+        for (e <- events) {
+          val data = e.getData.mkString(",")
+          tempArray+=data
+        }
+      }
+    })
+    siddhiAppRuntime.start()
+
     val fields = fromDF.schema.fields
-    result = fromDF.rdd.mapPartitions(part => {
-      val siddhiManager = new SiddhiManager
-      val runtime = siddhiManager.createSiddhiAppRuntime(siddhiApp)
+    fromDF.collect().map(r => {
+      val inputHandler = siddhiAppRuntime.getInputHandler(inStreamName)
+      val split = r.mkString(",").split(",")
+      val objects = new Array[Any](r.length)
 
-      var tempArray = ArrayBuffer.empty[AnyRef]
-      runtime.addCallback(outStreamName, new StreamCallback() {
-        override def receive(events: Array[Event]): Unit = {
-          for (e <- events) {
-            val data = e.getData.mkString(",")
-            tempArray+=data
-          }
+      for (i <- 0 until split.length) {
+        val typeName = fields(i).dataType.typeName.toLowerCase
+        var v: Any = null
+        typeName match {
+          case "string" => v = split(i)
+          case "int" | "integer" => v = java.lang.Integer.valueOf(split(i))
+          case "long" => v = java.lang.Long.valueOf(split(i))
+          case "float" => v = java.lang.Float.valueOf(split(i))
+          case "double" => v = java.lang.Double.valueOf(split(i))
+          case _ => v = split(i)
         }
-      })
-
-      runtime.start()
-
-      val inputHandler = runtime.getInputHandler(inStreamName)
-      part.foreach(r => {
-
-        val split = r.mkString(",").split(",")
-        val objects = new Array[Any](r.length)
-
-        for (i <- 0 until split.length) {
-          val typeName = fields(i).dataType.typeName.toLowerCase
-          var v: Any = null
-          typeName match {
-            case "string" => v = split(i)
-            case "int" | "integer" => v = java.lang.Integer.valueOf(split(i))
-            case "long" => v = java.lang.Long.valueOf(split(i))
-            case "float" => v = java.lang.Float.valueOf(split(i))
-            case "double" => v = java.lang.Double.valueOf(split(i))
-            case _ => v = split(i)
-          }
-          objects(i) = v
-        }
-        inputHandler.send(objects.asInstanceOf[Array[Object]])
-      })
-      tempArray.toIterator
+        objects(i) = v
+      }
+      inputHandler.send(objects.asInstanceOf[Array[Object]])
     })
 
     val outputFields = outStreams.get(0).getStepInfo.getOutputFields
@@ -108,8 +98,24 @@ class Siddhi extends BaseTransform {
     })
     val resultSchema = DataTypes.createStructType(outputStructFields.toArray)
 
-    val rdd = result.map(v => {
-      Row.fromSeq(v.toString.split(","))
+    val rdd = tempArray.map(v => {
+      val split = v.toString.split(",")
+      val objects = new Array[Any](split.length)
+      for (i <- 0 until split.length) {
+        val typeName = outputFields(i).getFieldType.toLowerCase
+        var temp: Any = null
+        typeName match {
+          case "string" => temp = split(i)
+          case "int" | "integer" => temp = java.lang.Integer.valueOf(split(i))
+          case "long" => temp = java.lang.Long.valueOf(split(i))
+          case "float" => temp = java.lang.Float.valueOf(split(i))
+          case "double" => temp = java.lang.Double.valueOf(split(i))
+          case _ => temp = split(i)
+        }
+        objects(i) = temp
+      }
+
+      Row.fromSeq(objects)
     })
     spark.createDataFrame(rdd, resultSchema)
   }

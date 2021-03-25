@@ -2,13 +2,13 @@ package com.scistor.compute
 
 import java.io.File
 import java.util
-
 import com.alibaba.fastjson.JSON
 import com.scistor.compute.apis.{BaseOutput, BaseStaticInput, BaseStreamingInput, BaseTransform, Plugin}
 import com.scistor.compute.model.remote.SparkTransDTO
 import com.scistor.compute.model.spark.ProjectInfo
 import com.scistor.compute.transform.UdfRegister
 import com.scistor.compute.utils.{AsciiArt, CompressionUtils, ConfigBuilder, JdbcUtil, SparkInfoTransfer}
+import io.siddhi.core.SiddhiAppRuntime
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
@@ -31,6 +31,8 @@ object SparkJobStarter extends Logging {
   var jobName: String = _
 
   var session: SparkSession = _
+
+  var siddhiAppRuntime: SiddhiAppRuntime = _
 
   def main(args: Array[String]): Unit = {
 
@@ -155,8 +157,7 @@ object SparkJobStarter extends Logging {
                                  ): Unit = {
     val info = SparkInfoTransfer.jobInfo
     jobName = sparkSession.sparkContext.getConf.get("spark.app.name", SparkInfoTransfer.jobName)
-//    val duration: Long = info.getStepList.get(0).getStepInfo.getStepAttributes.get("properties").asInstanceOf[util.Map[String, AnyRef]].getOrDefault("batchDuration", "10").toString.toLong
-    val duration: Long = 10L
+    val duration: Long = info.getStepList.get(0).getStepInfo.getStepAttributes.get("properties").asInstanceOf[util.Map[String, AnyRef]].getOrDefault("batchDuration", "10").toString.toLong
     val ssc = new StreamingContext(sparkSession.sparkContext, Seconds(duration))
 
     basePrepare(sparkSession, staticInputs, streamingInputs, outputs)

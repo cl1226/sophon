@@ -1,7 +1,9 @@
 package com.scistor.compute.utils
 
+import com.scistor.compute.SparkJobStarter.siddhiAppRuntime
 import com.scistor.compute.model.remote.{DataSourceStepType, DataSourceType, SparkTransDTO, StepSourceType, TransStepDTO}
 import com.scistor.compute.redis.{JedisClient, JedisUtil}
+import io.siddhi.core.SiddhiManager
 import org.apache.spark.internal.Logging
 
 import scala.collection.mutable
@@ -63,6 +65,11 @@ object SparkInfoTransfer extends Logging {
           // assembly user define or system operator step info
           step.getStepInfo.setStepFrom(step.getStepFrom.get(0))
           transforms = transforms + (step.getStepInfo.getName -> step.getStepInfo)
+          if (step.getStepInfo.getStepType.equals("siddhi")) {
+            val siddhiManager = new SiddhiManager
+            val siddhiApp = step.getStepInfo.getStepAttributes.getOrDefault("text", "").toString
+            siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(siddhiApp)
+          }
         }
         case _ => logError(s"unsupported [${step.getStepInfo.getStepSource}] type source")
       }

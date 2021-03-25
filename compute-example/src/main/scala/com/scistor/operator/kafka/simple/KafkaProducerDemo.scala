@@ -2,10 +2,11 @@ package com.scistor.operator.kafka.simple
 
 import java.text.SimpleDateFormat
 import java.util.{Calendar, Properties}
-
 import com.alibaba.fastjson.JSONObject
 import com.scistor.operator.ConstantsUtil.{randomAddress, randomName, randomUrl}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+
+import scala.util.Random
 
 object KafkaProducerDemo {
 
@@ -25,6 +26,7 @@ object KafkaProducerDemo {
     props.put("buffer.memory", "33554432")
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+//    props.put("partitioner.class", classOf[MyPartitioner].getName)
 
     val producer = new KafkaProducer[String, String](props)
 
@@ -41,11 +43,17 @@ object KafkaProducerDemo {
       json.put("url", randomUrl())
       json.put("create_time", timestamp)
 
-      val record = new ProducerRecord[String, String](topic, "", json.toJSONString)
+      val random = Random.nextInt(100)
+
+      val record = new ProducerRecord[String, String](topic, s"$random", json.toJSONString)
 
       println(record)
 
-      producer.send(record)
+      val value = producer.send(record)
+
+      val metadata = value.get()
+
+      println(metadata.partition())
 
       Thread.sleep(duration.toLong)
     }
