@@ -43,7 +43,7 @@ class Script extends BaseTransform {
         val sql = attrs.get("codeBlock").toString
         frame = spark.sql(sql)
       }
-      case OperatorImplementMethod.ScriptJava | OperatorImplementMethod.ScriptJava => {
+      case OperatorImplementMethod.ScriptJava | OperatorImplementMethod.ScriptScala => {
         val invokeInfo = new InvokeInfo("", attrs.get("methodName").toString, CommonUtil.portalField2ComputeField(config.getInputFields))
         invokeInfo.setCode(attrs.get("codeBlock").toString)
         config.setStepType(attrs.get("implementMethod").toString)
